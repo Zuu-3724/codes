@@ -1,11 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const Departments = () => {
-  return (
-    <div>
-      Department
-    </div>
-  )
-}
+  return <div>Departments</div>;
+};
 
-export default Departments
+export default Departments;

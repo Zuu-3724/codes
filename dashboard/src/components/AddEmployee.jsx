@@ -76,6 +76,7 @@ const AddEmployee = () => {
             <select
               id="DepartmentID"
               className="form-select"
+              value={employee.DepartmentID}
               onChange={(e) =>
                 setEmployee({ ...employee, DepartmentID: e.target.value })
               }
@@ -125,6 +126,7 @@ const AddEmployee = () => {
             <select
               id="Status"
               className="form-select"
+              value={employee.Status}
               onChange={(e) =>
                 setEmployee({ ...employee, Status: e.target.value })
               }

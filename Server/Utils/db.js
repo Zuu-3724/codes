@@ -20,12 +20,12 @@ mysqlCon.connect(function (err) {
 // Cấu hình kết nối SQL Server
 const sqlServerConfig = {
   user: "sa",
-  password: "",
-  server: "localhost",
+  password: "trunghieu013",
+  server: "DESKTOP-74S139L",
   database: "HUMAN_2025",
   options: {
-    encrypt: false, // Nếu dùng Windows Authentication, đổi thành true
-    trustServerCertificate: true, // Cần thiết nếu dùng localhost
+    encrypt: false,
+    trustServerCertificate: true,
   },
 };
 
