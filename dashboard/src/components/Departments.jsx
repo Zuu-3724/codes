@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Departments = () => {
   const [departments, setDepartments] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDepartments();
@@ -18,8 +20,7 @@ const Departments = () => {
   };
 
   const handleUpdate = (id) => {
-    alert(`Update department with ID: ${id}`);
-    // Implement update functionality
+    navigate(`/dashboard/update_department/${id}`);
   };
 
   const handleDelete = async (id) => {
