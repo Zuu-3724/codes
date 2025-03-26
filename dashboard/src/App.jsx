@@ -10,6 +10,7 @@ import Reports from "./components/Reports";
 import Alerts from "./components/Alerts";
 import Security from "./components/Security";
 import AddEmployee from "./components/AddEmployee";
+import UpdateEmployee from "./components/UpdateEmployee";
 
 function App() {
   return (
@@ -23,7 +24,10 @@ function App() {
               path="/dashboard/add_employee"
               element={<AddEmployee />}
             ></Route>
-
+            <Route
+              path="/dashboard/update_employee"
+              element={<UpdateEmployee />}
+            ></Route>
             <Route path="/dashboard/payroll" element={<Payroll />}></Route>
             <Route
               path="/dashboard/departments"

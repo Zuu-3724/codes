@@ -37,6 +37,7 @@ async function connectSQLServer() {
     return pool;
   } catch (err) {
     console.log("SQL Server connection error:", err);
+    throw err;
   }
 }
 

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 
-const AddEmployee = () => {
-  const navigate = useNavigate();
+const UpdateEmployee = () => {
+  const { id } = useParams(); // Get the employee ID from the URL
+  const navigate = useNavigate(); // For navigation after update
   const [employee, setEmployee] = useState({
     EmployeeID: "",
     ApplicantID: "",
@@ -15,51 +16,48 @@ const AddEmployee = () => {
 
   const [departments, setDepartments] = useState([]);
 
+  // Fetch employee details by ID
   useEffect(() => {
-    // Fetch departments
     axios
-      .get("http://localhost:3000/auth/departments")
+      .get(`http://localhost:3000/auth/employees/${id}`)
       .then((res) => {
         if (res.data.Status) {
-          setDepartments(res.data.Data);
+          setEmployee(res.data.Data); // Populate the form with employee data
         } else {
           alert(res.data.Error);
         }
       })
+      .catch((err) => console.error("Error fetching employee details:", err));
+  }, [id]);
+
+  // Fetch departments for the dropdown
+  useEffect(() => {
+    axios
+      .get("http://localhost:3000/api/departments")
+      .then((res) => setDepartments(res.data))
       .catch((err) => console.error("Error fetching departments:", err));
   }, []);
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:3000/auth/add_employee",
-        {
-          EmployeeID: employee.EmployeeID,
-          ApplicantID: employee.ApplicantID,
-          DepartmentID: parseInt(employee.DepartmentID),
-          HireDate: employee.HireDate,
-          Salary: parseFloat(employee.Salary),
-          Status: employee.Status,
-        }
+      await axios.put(
+        `http://localhost:3000/auth/update_employee/${id}`,
+        employee
       );
-
-      if (response.data.Status) {
-        alert(response.data.Message);
-        navigate("/dashboard/employees");
-      } else {
-        alert(response.data.Error);
-      }
+      alert("Employee updated successfully!");
+      navigate("/dashboard/employees"); // Redirect to the employee list
     } catch (error) {
-      console.error("Error adding employee:", error);
-      alert(error.response?.data?.Error || "Failed to add employee");
+      console.error("Error updating employee:", error);
+      alert("Failed to update employee.");
     }
   };
 
   return (
     <div className="d-flex justify-content-center mt-3">
       <div className="p-3 rounded w-50 border">
-        <h2 className="text-center">Add Employee</h2>
+        <h2 className="text-center">Update Employee</h2>
         <form className="row g-1" onSubmit={handleSubmit}>
           <div className="col-6">
             <label htmlFor="EmployeeID" className="form-label">
@@ -69,11 +67,8 @@ const AddEmployee = () => {
               type="text"
               className="form-control rounded-0"
               id="EmployeeID"
-              placeholder="Enter Employee ID"
-              onChange={(e) =>
-                setEmployee({ ...employee, EmployeeID: e.target.value })
-              }
-              required
+              value={employee.EmployeeID}
+              disabled // Employee ID should not be editable
             />
           </div>
 
@@ -85,11 +80,10 @@ const AddEmployee = () => {
               type="text"
               className="form-control"
               id="ApplicantID"
-              placeholder="Enter Applicant ID"
+              value={employee.ApplicantID}
               onChange={(e) =>
                 setEmployee({ ...employee, ApplicantID: e.target.value })
               }
-              required
             />
           </div>
 
@@ -104,12 +98,11 @@ const AddEmployee = () => {
               onChange={(e) =>
                 setEmployee({ ...employee, DepartmentID: e.target.value })
               }
-              required
             >
               <option value="">Select Department</option>
               {departments.map((dept) => (
-                <option key={dept.DepartmentID} value={dept.DepartmentID}>
-                  {dept.DepartmentName}
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
                 </option>
               ))}
             </select>
@@ -123,10 +116,10 @@ const AddEmployee = () => {
               type="date"
               className="form-control"
               id="HireDate"
+              value={employee.HireDate}
               onChange={(e) =>
                 setEmployee({ ...employee, HireDate: e.target.value })
               }
-              required
             />
           </div>
 
@@ -138,13 +131,10 @@ const AddEmployee = () => {
               type="number"
               className="form-control"
               id="Salary"
-              placeholder="Enter Salary"
-              step="0.01"
-              min="0"
+              value={employee.Salary}
               onChange={(e) =>
                 setEmployee({ ...employee, Salary: e.target.value })
               }
-              required
             />
           </div>
 
@@ -159,7 +149,6 @@ const AddEmployee = () => {
               onChange={(e) =>
                 setEmployee({ ...employee, Status: e.target.value })
               }
-              required
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -168,7 +157,7 @@ const AddEmployee = () => {
 
           <div className="col-12">
             <button type="submit" className="btn btn-primary w-100">
-              Add Employee
+              Update Employee
             </button>
           </div>
         </form>
@@ -177,4 +166,4 @@ const AddEmployee = () => {
   );
 };
 
-export default AddEmployee;
+export default UpdateEmployee;
