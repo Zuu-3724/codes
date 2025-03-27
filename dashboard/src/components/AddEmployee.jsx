@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { getAuthConfig } from "../config/api.config";
 
 const AddEmployee = () => {
   const navigate = useNavigate();
@@ -14,26 +15,50 @@ const AddEmployee = () => {
   });
 
   const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch departments
-    axios
-      .get("http://localhost:3000/auth/departments")
-      .then((res) => {
-        if (res.data.Status) {
-          setDepartments(res.data.Data);
-        } else {
-          alert(res.data.Error);
-        }
-      })
-      .catch((err) => console.error("Error fetching departments:", err));
+    fetchDepartments();
   }, []);
+
+  const fetchDepartments = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const config = getAuthConfig(navigate);
+      if (!config) return;
+
+      const response = await axios.get(
+        "http://localhost:9000/departments/list",
+        config
+      );
+
+      if (response.data.Status) {
+        setDepartments(response.data.Data);
+      } else {
+        setError(response.data.Error || "Unable to load department list");
+      }
+    } catch (err) {
+      console.error("Error loading department list:", err);
+      setError("Unable to connect to server. Please try again later");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     try {
+      const config = getAuthConfig(navigate);
+      if (!config) return;
+
       const response = await axios.post(
-        "http://localhost:3000/auth/add_employee",
+        "http://localhost:9000/employees/add",
         {
           EmployeeID: employee.EmployeeID,
           ApplicantID: employee.ApplicantID,
@@ -41,25 +66,47 @@ const AddEmployee = () => {
           HireDate: employee.HireDate,
           Salary: parseFloat(employee.Salary),
           Status: employee.Status,
-        }
+        },
+        config
       );
 
       if (response.data.Status) {
-        alert(response.data.Message);
+        alert(response.data.Message || "Employee added successfully");
         navigate("/dashboard/employees");
       } else {
-        alert(response.data.Error);
+        setError(response.data.Error || "Unable to add employee");
       }
     } catch (error) {
       console.error("Error adding employee:", error);
-      alert(error.response?.data?.Error || "Failed to add employee");
+      if (error.response) {
+        if (error.response.status === 401) {
+          navigate("/login");
+        } else {
+          setError(error.response.data?.Error || "Connection error to server");
+        }
+      } else {
+        setError("Network error. Please check your connection");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="d-flex justify-content-center mt-3">
       <div className="p-3 rounded w-50 border">
-        <h2 className="text-center">Add Employee</h2>
+        <h2 className="text-center">Add New Employee</h2>
+
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+            <button
+              className="btn-close float-end"
+              onClick={() => setError(null)}
+            ></button>
+          </div>
+        )}
+
         <form className="row g-1" onSubmit={handleSubmit}>
           <div className="col-6">
             <label htmlFor="EmployeeID" className="form-label">
@@ -69,11 +116,12 @@ const AddEmployee = () => {
               type="text"
               className="form-control rounded-0"
               id="EmployeeID"
-              placeholder="Enter Employee ID"
+              placeholder="Enter employee ID"
               onChange={(e) =>
                 setEmployee({ ...employee, EmployeeID: e.target.value })
               }
               required
+              disabled={loading}
             />
           </div>
 
@@ -85,11 +133,12 @@ const AddEmployee = () => {
               type="text"
               className="form-control"
               id="ApplicantID"
-              placeholder="Enter Applicant ID"
+              placeholder="Enter applicant ID"
               onChange={(e) =>
                 setEmployee({ ...employee, ApplicantID: e.target.value })
               }
               required
+              disabled={loading}
             />
           </div>
 
@@ -105,8 +154,9 @@ const AddEmployee = () => {
                 setEmployee({ ...employee, DepartmentID: e.target.value })
               }
               required
+              disabled={loading}
             >
-              <option value="">Select Department</option>
+              <option value="">Select department</option>
               {departments.map((dept) => (
                 <option key={dept.DepartmentID} value={dept.DepartmentID}>
                   {dept.DepartmentName}
@@ -127,6 +177,7 @@ const AddEmployee = () => {
                 setEmployee({ ...employee, HireDate: e.target.value })
               }
               required
+              disabled={loading}
             />
           </div>
 
@@ -138,13 +189,14 @@ const AddEmployee = () => {
               type="number"
               className="form-control"
               id="Salary"
-              placeholder="Enter Salary"
+              placeholder="Enter salary amount"
               step="0.01"
               min="0"
               onChange={(e) =>
                 setEmployee({ ...employee, Salary: e.target.value })
               }
               required
+              disabled={loading}
             />
           </div>
 
@@ -160,15 +212,20 @@ const AddEmployee = () => {
                 setEmployee({ ...employee, Status: e.target.value })
               }
               required
+              disabled={loading}
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
           </div>
 
-          <div className="col-12">
-            <button type="submit" className="btn btn-primary w-100">
-              Add Employee
+          <div className="col-12 mt-3">
+            <button
+              type="submit"
+              className="btn btn-primary w-100"
+              disabled={loading}
+            >
+              {loading ? "Processing..." : "Add Employee"}
             </button>
           </div>
         </form>

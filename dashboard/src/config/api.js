@@ -1,8 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:9000";
 
 export const API_ENDPOINTS = {
   // Auth routes
-  adminLogin: `${API_URL}/auth/adminlogin`,
   userLogin: `${API_URL}/auth/login`,
   register: `${API_URL}/auth/register`,
   logout: `${API_URL}/auth/logout`,

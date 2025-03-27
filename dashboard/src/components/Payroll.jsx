@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaSearch, FaEdit, FaHistory } from "react-icons/fa";
+import UpdatePayroll from "./UpdatePayroll";
 
 const Payroll = () => {
   const [payroll, setPayroll] = useState([]);
@@ -8,6 +9,8 @@ const Payroll = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [salaryHistory, setSalaryHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [employeeToUpdate, setEmployeeToUpdate] = useState(null);
 
   useEffect(() => {
     fetchPayroll();
@@ -15,7 +18,7 @@ const Payroll = () => {
 
   const fetchPayroll = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth/payroll");
+      const response = await axios.get("http://localhost:9000/auth/payroll");
       if (response.data.Status) {
         setPayroll(response.data.Data);
       }
@@ -24,28 +27,21 @@ const Payroll = () => {
     }
   };
 
-  const handleSalaryUpdate = async (employeeId, newSalary) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:3000/auth/update-salary/${employeeId}`,
-        {
-          salary: newSalary,
-        }
-      );
-      if (response.data.Status) {
-        alert("Salary updated successfully!");
-        fetchPayroll();
-      }
-    } catch (error) {
-      console.error("Error updating salary:", error);
-      alert("Failed to update salary");
-    }
+  const handleShowUpdateModal = (employee) => {
+    setEmployeeToUpdate(employee);
+    setShowUpdateModal(true);
+  };
+
+  const handleUpdateSuccess = () => {
+    fetchPayroll();
+    setShowUpdateModal(false);
+    setEmployeeToUpdate(null);
   };
 
   const fetchSalaryHistory = async (employeeId) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/auth/salary-history/${employeeId}`
+        `http://localhost:9000/auth/salary-history/${employeeId}`
       );
       if (response.data.Status) {
         setSalaryHistory(response.data.Data);
@@ -114,18 +110,7 @@ const Payroll = () => {
                     <td>
                       <button
                         className="btn btn-primary btn-sm me-2"
-                        onClick={() => {
-                          const newSalary = prompt(
-                            "Enter new salary:",
-                            employee.Salary
-                          );
-                          if (newSalary && !isNaN(newSalary)) {
-                            handleSalaryUpdate(
-                              employee.EmployeeID,
-                              parseFloat(newSalary)
-                            );
-                          }
-                        }}
+                        onClick={() => handleShowUpdateModal(employee)}
                       >
                         <FaEdit /> Update
                       </button>
@@ -193,6 +178,14 @@ const Payroll = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Update Salary Modal */}
+      {showUpdateModal && employeeToUpdate && (
+        <UpdatePayroll
+          employee={employeeToUpdate}
+          onUpdateSuccess={handleUpdateSuccess}
+        />
       )}
     </div>
   );

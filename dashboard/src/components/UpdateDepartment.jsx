@@ -9,14 +9,6 @@ import {
   FaExclamationTriangle,
   FaSpinner,
 } from "react-icons/fa";
-import { ErrorBoundary } from "react-error-boundary";
-
-const ErrorFallback = ({ error }) => (
-  <div className="alert alert-danger">
-    <h4>Something went wrong:</h4>
-    <pre>{error.message}</pre>
-  </div>
-);
 
 const UpdateDepartment = () => {
   const navigate = useNavigate();
@@ -44,8 +36,8 @@ const UpdateDepartment = () => {
         console.log("Fetching department data for ID:", id); // Debug log
 
         const [departmentResponse, employeesResponse] = await Promise.all([
-          axios.get(`http://localhost:3000/auth/department/${id}`),
-          axios.get("http://localhost:3000/auth/employees"),
+          axios.get(`http://localhost:9000/departments/${id}`),
+          axios.get("http://localhost:9000/employees/list"),
         ]);
 
         console.log("Department response:", departmentResponse.data); // Debug log
@@ -103,7 +95,7 @@ const UpdateDepartment = () => {
       setSuccess("");
 
       const response = await axios.put(
-        `http://localhost:3000/auth/update-department/${id}`,
+        `http://localhost:9000/departments/update/${id}`,
         department
       );
 
@@ -242,7 +234,7 @@ const UpdateDepartment = () => {
                     name="Description"
                     value={department.Description}
                     onChange={handleChange}
-                    rows="3"
+                    required
                   />
                   {validationErrors.Description && (
                     <div className="invalid-feedback">
@@ -251,48 +243,18 @@ const UpdateDepartment = () => {
                   )}
                 </div>
 
-                <div className="mb-3">
-                  <label className="form-label">Status</label>
-                  <select
-                    className="form-select"
-                    name="Status"
-                    value={department.Status}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-
-                <div className="d-flex justify-content-end gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => navigate("/dashboard/departments")}
-                    disabled={submitting}
-                  >
-                    <FaTimes className="me-2" />
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <>
-                        <FaSpinner className="fa-spin me-2" />
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <FaSave className="me-2" />
-                        Update
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <FaSpinner className="fa-spin" />
+                  ) : (
+                    <FaSave className="me-2" />
+                  )}
+                  Update Department
+                </button>
               </form>
             </div>
           </div>
@@ -302,10 +264,4 @@ const UpdateDepartment = () => {
   );
 };
 
-export default function UpdateDepartmentWithErrorBoundary() {
-  return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <UpdateDepartment />
-    </ErrorBoundary>
-  );
-}
+export default UpdateDepartment;

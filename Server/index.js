@@ -1,90 +1,92 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import path from "path";
-import { fileURLToPath } from "url";
-import adminRoutes from "./Routes/AdminRoute.js";
-import authRoutes from "./Routes/AuthRoute.js";
-import employeeRoutes from "./Routes/EmployeeRoute.js";
+import config from "./config.js";
+import errorHandler from "./middleware/errorHandler.js";
+import authRoutes from "./routes/authRoute.js";
+import adminRoutes from "./routes/adminRoute.js";
+import employeeRoutes from "./routes/employeeRoute.js";
 
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Middleware
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Create uploads directory if it doesn't exist
-import fs from "fs";
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-app.use("/uploads", express.static(uploadsDir));
-
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
+// CORS configuration
+app.use(cors(config.CORS));
 
 // Routes
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/employees", employeeRoutes);
 
-// Test route
-app.get("/test", (req, res) => {
-  res.json({ message: "Server đang hoạt động" });
-});
-
-// 404 handler
-app.use((req, res) => {
-  console.log(`404 - Not Found: ${req.url}`);
-  res.status(404).json({ Status: false, Message: "Không tìm thấy trang" });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error("Error:", err);
-  console.error("Stack:", err.stack);
-  res.status(500).json({
-    Status: false,
-    Message: "Lỗi server",
-    Error: process.env.NODE_ENV === "development" ? err.message : undefined,
+// Thêm route departments tạm thời
+app.get("/departments/list", (req, res) => {
+  console.log("Received request for departments list");
+  res.status(200).json({
+    Status: true,
+    Data: [
+      { DepartmentID: 1, DepartmentName: "IT", ManagerID: "M001" },
+      { DepartmentID: 2, DepartmentName: "HR", ManagerID: "M002" },
+      { DepartmentID: 3, DepartmentName: "Finance", ManagerID: "M003" },
+      { DepartmentID: 4, DepartmentName: "Marketing", ManagerID: "M004" },
+    ],
   });
 });
 
-// Start server with error handling
-const PORT = process.env.PORT || 3001;
-const server = app
-  .listen(PORT)
-  .on("error", (err) => {
-    if (err.code === "EADDRINUSE") {
-      console.error(
-        `Port ${PORT} is already in use. Trying port ${PORT + 1}...`
-      );
-      server.close();
-      app.listen(PORT + 1, () => {
-        console.log(`Server is running on port ${PORT + 1}`);
-        console.log(`Upload directory: ${uploadsDir}`);
-      });
-    } else {
-      console.error("Server error:", err);
-    }
-  })
-  .on("listening", () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Upload directory: ${uploadsDir}`);
+app.get("/departments/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const departments = [
+    { DepartmentID: 1, DepartmentName: "IT", ManagerID: "M001" },
+    { DepartmentID: 2, DepartmentName: "HR", ManagerID: "M002" },
+    { DepartmentID: 3, DepartmentName: "Finance", ManagerID: "M003" },
+    { DepartmentID: 4, DepartmentName: "Marketing", ManagerID: "M004" },
+  ];
+
+  const department = departments.find((d) => d.DepartmentID === id);
+
+  if (department) {
+    res.status(200).json({
+      Status: true,
+      Data: department,
+    });
+  } else {
+    res.status(404).json({
+      Status: false,
+      Message: "Department not found",
+    });
+  }
+});
+
+// API endpoint để cập nhật phòng ban
+app.put("/departments/update/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const updatedDepartment = req.body;
+
+  console.log(
+    `Received update request for department ID: ${id}`,
+    updatedDepartment
+  );
+
+  // Trả về response thành công giả lập
+  res.status(200).json({
+    Status: true,
+    Message: "Department updated successfully",
+    Data: {
+      ...updatedDepartment,
+      DepartmentID: id,
+    },
   });
+});
+
+// Error handling
+app.use(errorHandler);
+
+// Start server
+const PORT = config.PORT;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`Environment: ${config.NODE_ENV}`);
+});

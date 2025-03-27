@@ -27,7 +27,7 @@ const EmployeeLogin = () => {
       })
       .catch((err) => {
         console.log(err);
-        setError(err.response?.data?.message || "Đã có lỗi xảy ra");
+        setError(err.response?.data?.message || "An error occurred");
       });
   };
 
@@ -35,17 +35,17 @@ const EmployeeLogin = () => {
     <div className="d-flex justify-content-center align-items-center vh-100 loginPage">
       <div className="p-3 rounded w-25 border loginForm">
         {error && <div className="alert alert-danger">{error}</div>}
-        <h2>Đăng nhập</h2>
+        <h2>Login</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label htmlFor="username">
-              <strong>Tên đăng nhập:</strong>
+              <strong>Username:</strong>
             </label>
             <input
               type="text" // Đổi type từ email sang text
               name="username"
               autoComplete="off"
-              placeholder="Nhập tên đăng nhập"
+              placeholder="Enter username"
               onChange={(e) =>
                 setValues({ ...values, username: e.target.value })
               }
@@ -54,12 +54,12 @@ const EmployeeLogin = () => {
           </div>
           <div className="mb-3">
             <label htmlFor="password">
-              <strong>Mật khẩu:</strong>
+              <strong>Password:</strong>
             </label>
             <input
               type="password"
               name="password"
-              placeholder="Nhập mật khẩu"
+              placeholder="Enter password"
               onChange={(e) =>
                 setValues({ ...values, password: e.target.value })
               }
@@ -71,7 +71,7 @@ const EmployeeLogin = () => {
             className="btn btn-primary w-100 rounded-0 mb-2"
             disabled={!values.username || !values.password} // Disable nút khi chưa nhập đủ thông tin
           >
-            Đăng nhập
+            Login
           </button>
         </form>
       </div>

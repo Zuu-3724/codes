@@ -22,7 +22,7 @@ const Reports = () => {
     try {
       // Fetch employee statistics
       const employeeResponse = await axios.get(
-        `http://localhost:3000/auth/employee-stats?year=${selectedYear}`
+        `http://localhost:9000/auth/employee-stats?year=${selectedYear}`
       );
       if (employeeResponse.data.Status) {
         setEmployeeStats(employeeResponse.data.Data);
@@ -30,7 +30,7 @@ const Reports = () => {
 
       // Fetch salary statistics
       const salaryResponse = await axios.get(
-        `http://localhost:3000/auth/salary-stats?year=${selectedYear}`
+        `http://localhost:9000/auth/salary-stats?year=${selectedYear}`
       );
       if (salaryResponse.data.Status) {
         setSalaryStats(salaryResponse.data.Data);
@@ -38,7 +38,7 @@ const Reports = () => {
 
       // Fetch dividend statistics
       const dividendResponse = await axios.get(
-        `http://localhost:3000/auth/dividend-stats?year=${selectedYear}`
+        `http://localhost:9000/auth/dividend-stats?year=${selectedYear}`
       );
       if (dividendResponse.data.Status) {
         setDividendStats(dividendResponse.data.Data);
@@ -51,7 +51,7 @@ const Reports = () => {
   const handleExportReport = async (reportType) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/auth/export-report/${reportType}?year=${selectedYear}`,
+        `http://localhost:9000/auth/export-report/${reportType}?year=${selectedYear}`,
         { responseType: "blob" }
       );
 

@@ -2,18 +2,27 @@ import React from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import axios from "axios";
+import { TokenManager } from "../config/api.config";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  axios.defaults.withCredentials = true;
 
-  const handleLogout = () => {
-    axios.get("http://localhost:3000/auth/logout").then((result) => {
-      if (result.data.Status) {
-        localStorage.removeItem("valid");
-        navigate("/");
+  const handleLogout = async () => {
+    try {
+      const response = await axios.get("http://localhost:9000/auth/logout", {
+        withCredentials: true,
+      });
+
+      if (response.data.Status) {
+        TokenManager.removeToken();
+        navigate("/login");
       }
-    });
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Remove token regardless of error
+      TokenManager.removeToken();
+      navigate("/login");
+    }
   };
 
   return (
@@ -62,7 +71,7 @@ const Dashboard = () => {
                 >
                   <i className="fs-4 bi-diagram-3 ms-2"></i>
                   <span className="ms-2 d-none d-sm-inline">
-                    Department & Job Titles
+                    Departments & Positions
                   </span>
                 </Link>
               </li>
@@ -95,7 +104,7 @@ const Dashboard = () => {
                 >
                   <i className="fs-4 bi-shield-lock ms-2"></i>
                   <span className="ms-2 d-none d-sm-inline">
-                    Security & RBAC
+                    Security & Permissions
                   </span>
                 </Link>
               </li>
@@ -110,7 +119,7 @@ const Dashboard = () => {
         </div>
         <div className="col p-0 m-0">
           <div className="p-2 d-flex justify-content-center shadow">
-            <h4>Payroll & HRM Dashboard</h4>
+            <h4>HR & Payroll Management System</h4>
           </div>
           <Outlet />
         </div>
