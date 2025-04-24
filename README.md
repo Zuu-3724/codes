@@ -40,7 +40,7 @@ Hệ thống quản lý nhân sự và lương tích hợp, được phát tri�
 ### Bước 1: Clone Repository
 
 ```bash
-git clone https://github.com/trunghieu013/Dashboard-HR-PAYROLL-.git
+git clone https://github.com/trunghieu013/Dashboard-HR-PAYROLL.git
 cd Dashboard-HR-PAYROLL-
 ```
 
