@@ -122,9 +122,20 @@ const Security = () => {
       const config = getAuthConfig(navigate);
       if (!config) return;
 
+      const payload = {
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+      };
+
+      // Only include password if it's not empty
+      if (formData.password) {
+        payload.password = formData.password;
+      }
+
       const response = await axios.put(
         `http://localhost:9000/auth/update-user/${selectedUser.id}`,
-        formData,
+        payload,
         config
       );
       if (response.data.Status) {
@@ -178,30 +189,73 @@ const Security = () => {
   };
 
   const handleResetPassword = async (userId) => {
-    setLoading(true);
-    try {
-      const config = getAuthConfig(navigate);
-      if (!config) return;
+    if (
+      window.confirm(
+        "Reset password for this user? A temporary password will be generated."
+      )
+    ) {
+      setLoading(true);
+      try {
+        const config = getAuthConfig(navigate);
+        if (!config) return;
 
-      const response = await axios.post(
-        `http://localhost:9000/auth/reset-password/${userId}`,
-        {},
-        config
-      );
-      if (response.data.Status) {
-        alert("Password reset successful!");
-      } else {
-        alert(response.data.Error || "Unable to reset password");
+        const response = await axios.post(
+          `http://localhost:9000/auth/reset-password/${userId}`,
+          {},
+          config
+        );
+        if (response.data.Status) {
+          alert(
+            `Password reset successful! Temporary password: ${
+              response.data.password || "Check server logs"
+            }`
+          );
+        } else {
+          alert(response.data.Error || "Unable to reset password");
+        }
+      } catch (error) {
+        console.error("Error resetting password:", error);
+        if (error.response?.status === 401) {
+          navigate("/login");
+        } else {
+          alert("Unable to reset password. Please try again later");
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      if (error.response?.status === 401) {
-        navigate("/login");
-      } else {
-        alert("Unable to reset password. Please try again later");
+    }
+  };
+
+  const handleToggleUserStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === "Active" ? "Locked" : "Active";
+    if (
+      window.confirm(
+        `Are you sure you want to change user status to ${newStatus}?`
+      )
+    ) {
+      setLoading(true);
+      try {
+        const config = getAuthConfig(navigate);
+        if (!config) return;
+
+        const response = await axios.put(
+          `http://localhost:9000/auth/toggle-status/${userId}`,
+          { status: newStatus },
+          config
+        );
+
+        if (response.data.Status) {
+          alert(`User status updated to ${newStatus}!`);
+          fetchUsers();
+        } else {
+          alert(response.data.Error || "Unable to update user status");
+        }
+      } catch (error) {
+        console.error("Error updating user status:", error);
+        alert("Unable to update user status. Please try again later");
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -269,6 +323,11 @@ const Security = () => {
                             className={`badge bg-${
                               user.status === "Active" ? "success" : "danger"
                             }`}
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              handleToggleUserStatus(user.id, user.status)
+                            }
+                            title="Click to toggle status"
                           >
                             {user.status === "Active" ? "Active" : "Locked"}
                           </span>

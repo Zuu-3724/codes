@@ -25,6 +25,111 @@ const Dashboard = () => {
     }
   };
 
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+
+    const config = getAuthConfig(navigate);
+    if (!config) return;
+
+    try {
+      // Thử kết nối với database để lấy dữ liệu dashboard
+      const response = await axios.get(
+        "http://localhost:9000/dashboard",
+        config
+      );
+
+      if (response.data.Status) {
+        const data = response.data.Data;
+        setStatsData({
+          employees: data.totalEmployees || 0,
+          departments: data.totalDepartments || 0,
+          attendance: data.attendanceRate || 0,
+          payroll: data.totalPayroll || 0,
+        });
+
+        setChartData({
+          attendanceData: data.attendanceChart || demoAttendanceData,
+          departmentData: data.departmentChart || demoDepartmentData,
+        });
+
+        setRecentActivity(data.recentActivities || []);
+        setError(null);
+        setUsingDemoData(false);
+      } else {
+        throw new Error("Could not fetch dashboard data from database");
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+
+      if (error.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
+      // Nếu không kết nối được database, sử dụng demo data
+      setStatsData({
+        employees: 145,
+        departments: 8,
+        attendance: 92,
+        payroll: 450000000,
+      });
+
+      setChartData({
+        attendanceData: demoAttendanceData,
+        departmentData: demoDepartmentData,
+      });
+
+      setRecentActivity([
+        {
+          id: 1,
+          type: "employee",
+          action: "added",
+          name: "Nguyễn Văn A",
+          timestamp: "2023-04-28T09:30:00",
+          department: "IT",
+        },
+        {
+          id: 2,
+          type: "payroll",
+          action: "processed",
+          name: "Payroll April 2023",
+          timestamp: "2023-04-27T15:20:00",
+        },
+        {
+          id: 3,
+          type: "attendance",
+          action: "updated",
+          name: "Trần Thị B",
+          timestamp: "2023-04-27T10:15:00",
+          department: "HR",
+        },
+        {
+          id: 4,
+          type: "employee",
+          action: "updated",
+          name: "Lê Văn C",
+          timestamp: "2023-04-26T14:45:00",
+          department: "Finance",
+        },
+        {
+          id: 5,
+          type: "department",
+          action: "added",
+          name: "Marketing",
+          timestamp: "2023-04-25T11:30:00",
+        },
+      ]);
+
+      setUsingDemoData(true);
+      setError(
+        "Đang sử dụng dữ liệu demo do không kết nối được tới máy chủ cơ sở dữ liệu"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container-fluid">
       <div className="row flex-nowrap">
@@ -60,7 +165,18 @@ const Dashboard = () => {
                 >
                   <i className="fs-4 bi-cash ms-2"></i>
                   <span className="ms-2 d-none d-sm-inline">
-                    Payroll & Attendance
+                    Payroll Management
+                  </span>
+                </Link>
+              </li>
+              <li className="w-100">
+                <Link
+                  to="/dashboard/attendance"
+                  className="nav-link text-white px-0 align-middle"
+                >
+                  <i className="fs-4 bi-calendar-check ms-2"></i>
+                  <span className="ms-2 d-none d-sm-inline">
+                    Attendance Tracking
                   </span>
                 </Link>
               </li>

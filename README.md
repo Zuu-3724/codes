@@ -1,9 +1,10 @@
-# Hệ Thống Quản Lý Nhân Sự & Lương (HR-PAYROLL)
+# Dashboard HR PAYROLL
 
-Hệ thống quản lý nhân sự và lương tích hợp, được phát triển với các công nghệ hiện đại. Giải pháp toàn diện cho doanh nghiệp để quản lý nhân viên, phòng ban, chấm công và thanh toán lương.
+Hệ thống quản lý Nhân sự và Lương được phát triển bằng Python FastAPI và React.
 
-## Tính Năng
+## Cấu trúc dự án
 
+<<<<<<< Updated upstream
 - **Quản lý nhân viên**: Thêm, sửa, xóa, xem thông tin nhân viên
 - **Quản lý phòng ban**: Tổ chức và quản lý cấu trúc phòng ban
 - **Hệ thống lương**: Quản lý lương, phụ cấp, và các khoản khấu trừ
@@ -40,61 +41,134 @@ Hệ thống quản lý nhân sự và lương tích hợp, được phát tri�
 ### Bước 1: Clone Repository
 
 ```bash
-git clone https://github.com/trunghieu013/Dashboard-HR-PAYROLL-.git
+git clone https://github.com/trunghieu013/Dashboard-HR-PAYROLL.git
 cd Dashboard-HR-PAYROLL-
+=======
+```
+dashboard-hr-payroll/
+├── python_server/        # Backend API (Python FastAPI)
+│   ├── main.py           # Entry point của ứng dụng Python
+│   ├── routes/           # Các API endpoints
+│   ├── middleware/       # Xác thực và middleware
+│   ├── utils/            # Các tiện ích
+│   ├── migrations/       # Script khởi tạo database
+│   └── tests/            # Unit tests
+│
+└── dashboard/            # Frontend (React/Vite)
+    ├── src/              # Mã nguồn frontend
+    └── public/           # Tài nguyên tĩnh
+>>>>>>> Stashed changes
 ```
 
-### Bước 2: Cài Đặt Dependencies
+## Công nghệ sử dụng
 
-#### Backend (Server)
+### Backend:
+
+- Python FastAPI: Framework API hiệu năng cao và dễ sử dụng
+- SQL Server/MySQL: Cơ sở dữ liệu
+- JWT Authentication: Xác thực người dùng
+- Async/Await: Xử lý đồng thời
+- Pydantic: Validation và kiểu dữ liệu
+
+### Frontend:
+
+- React: Thư viện UI
+- Vite: Development server và build tool
+- React Router: Quản lý routing
+- Axios: HTTP Client
+
+## Cài đặt và Chạy
+
+### Backend (Python)
+
+1. Cài đặt môi trường Python:
 
 ```bash
-cd server
-npm install
+# Tạo và kích hoạt môi trường ảo
+python -m venv venv
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
+
+# Cài đặt dependencies
+cd python_server
+pip install -r requirements.txt
 ```
 
-#### Frontend (Dashboard)
+2. Cấu hình database:
+
+- Tạo file `.env` từ `.env.example`
+- Cập nhật thông tin kết nối MySQL và SQL Server
+
+3. Chạy migration để tạo bảng:
+
+```bash
+python -m migrations.create_tables
+```
+
+4. Chạy server:
+
+```bash
+uvicorn main:app --reload --port 9000
+```
+
+### Frontend (React)
+
+1. Cài đặt Node.js dependencies:
 
 ```bash
 cd dashboard
 npm install
 ```
 
-### Bước 3: Cấu Hình Môi Trường
-
-#### Backend
-
-Tạo file `.env` trong thư mục `server` với các biến môi trường sau:
-
-```
-DB_HOST=          # Địa chỉ máy chủ cơ sở dữ liệu
-DB_USER=          # Tên người dùng cơ sở dữ liệu
-DB_PASSWORD=      # Mật khẩu cơ sở dữ liệu
-DB_NAME=          # Tên cơ sở dữ liệu
-JWT_SECRET=       # Khóa bí mật cho JWT
-PORT=             # Cổng cho máy chủ (mặc định: 9000)
-```
-
-#### Frontend
-
-Tạo file `.env` trong thư mục `dashboard`:
-
-```
-VITE_API_URL=     # URL của API backend (ví dụ: http://localhost:3000)
-```
-
-### Bước 4: Chạy Ứng Dụng
-
-#### Backend
+2. Chạy development server:
 
 ```bash
-cd server
-npm start
-```
-
-#### Frontend
-
-```bash
-cd dashboard
 npm run dev
-```                                     
+```
+
+## API Documentation
+
+Truy cập các tài liệu API tự động tại:
+
+- Swagger UI: http://localhost:9000/docs
+- ReDoc: http://localhost:9000/redoc
+
+## Tính năng chính
+
+- Đăng nhập/Đăng ký người dùng
+- Quản lý nhân viên
+- Quản lý phòng ban
+- Quản lý lương và thưởng
+- Báo cáo và thống kê
+
+## Phát triển
+
+### Thêm API mới
+
+1. Tạo file mới trong thư mục `python_server/routes/`
+2. Định nghĩa router và endpoints
+3. Import và đăng ký router trong `main.py`
+
+### Thêm tính năng Frontend
+
+1. Tạo component trong `dashboard/src/components/`
+2. Thêm route trong `dashboard/src/App.jsx` hoặc router configuration
+3. Kết nối với API backend qua HTTP client
+
+## Testing
+
+```bash
+# Backend tests
+cd python_server
+pytest
+
+# Frontend tests
+cd dashboard
+npm test
+```
+
+## Phiên bản
+
+- Phiên bản hiện tại: 1.0.0
+- Python: 3.9+
+- Node.js: 16+

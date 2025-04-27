@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import Home from "./components/Home";
 import Employees from "./components/Employees";
 import Payroll from "./components/Payroll";
+import Attendance from "./components/Attendance";
 import Departments from "./components/Departments";
 import Reports from "./components/Reports";
 import Alerts from "./components/Alerts";
@@ -13,6 +14,7 @@ import Security from "./components/Security";
 import AddEmployee from "./components/AddEmployee";
 import UpdateEmployee from "./components/UpdateEmployee";
 import UpdateDepartment from "./components/UpdateDepartment";
+import AddDepartment from "./components/AddDepartment";
 
 function App() {
   return (
@@ -34,8 +36,16 @@ function App() {
             ></Route>
             <Route path="/dashboard/payroll" element={<Payroll />}></Route>
             <Route
+              path="/dashboard/attendance"
+              element={<Attendance />}
+            ></Route>
+            <Route
               path="/dashboard/departments"
               element={<Departments />}
+            ></Route>
+            <Route
+              path="/dashboard/add_department"
+              element={<AddDepartment />}
             ></Route>
             <Route
               path="/dashboard/update_department/:id"

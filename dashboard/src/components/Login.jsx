@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./style.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { TokenManager } from "../config/api.config";
+import { TokenManager, authAPI } from "../config/api.config";
 
 // Cấu hình bảo mật và API
 const SECURITY_CONFIG = {
@@ -16,8 +16,9 @@ const SECURITY_CONFIG = {
 
 const Login = () => {
   const [values, setValues] = useState({
-    username: "",
-    password: "",
+    // Default to test credentials to make testing easier
+    username: "admin",
+    password: "admin123",
   });
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,39 +44,57 @@ const Login = () => {
     }
 
     try {
-      const response = await axios({
-        method: "post",
-        url: "http://localhost:9000/auth/login",
-        data: values,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: SECURITY_CONFIG.CORS.CREDENTIALS,
-        timeout: 10000,
+      console.log("Attempting login with:", values.username);
+
+      // Using authAPI.login instead of direct axios call
+      const response = await authAPI.login({
+        username: values.username,
+        password: values.password,
       });
 
-      if (response.data.Status) {
+      console.log("Login response:", response);
+
+      if (response && response.Status) {
         console.log("Login successful");
-        // Lưu token và thông tin user
-        if (response.data.token) {
-          TokenManager.setToken(response.data.token);
-        }
+        // TokenManager.setToken is already called in authAPI.login
         localStorage.setItem(
           SECURITY_CONFIG.AUTH.USER_KEY,
-          JSON.stringify(response.data.Data)
+          JSON.stringify(response.Data)
         );
         navigate("/dashboard");
       } else {
-        console.log("Login failed:", response.data.Message);
-        setError(response.data.Message || "Login failed");
+        console.log("Login failed:", response.Message);
+        setError(response.Message || "Login failed");
       }
     } catch (err) {
       console.error("Login error:", err);
 
+      // Handle direct error responses (non-HTTP errors)
+      if (err.response && err.response.data) {
+        const errorData = err.response.data;
+        if (errorData.Message) {
+          setError(errorData.Message);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Detailed error display
+      let errorMessage = "An error occurred during login";
+
+      // Check for server error details
+      if (err.data && err.data.Message) {
+        errorMessage = err.data.Message;
+      } else if (err.data && err.data.detail) {
+        errorMessage = err.data.detail;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       // Xử lý các loại lỗi cụ thể
-      if (err.response) {
+      if (err.status) {
         // Server trả về lỗi
-        switch (err.response.status) {
+        switch (err.status) {
           case 401:
             setError("Username or password is incorrect");
             break;
@@ -85,25 +104,26 @@ const Login = () => {
           case 404:
             setError("Account not found");
             break;
+          case 422:
+            setError("Invalid request format. Please try again.");
+            break;
           case 429:
             setError("Too many login attempts. Please try again later");
             break;
           case 500:
-            setError("Server error, please try again later");
+            setError(`Server error: ${errorMessage}`);
             break;
           default:
-            setError(
-              err.response.data?.Message || "An error occurred during login"
-            );
+            setError(errorMessage);
         }
-      } else if (err.code === "ECONNABORTED") {
+      } else if (err.originalError?.code === "ECONNABORTED") {
         setError("Login request timed out. Please try again");
-      } else if (err.request) {
+      } else if (err.isConnectionError) {
         setError(
           "Cannot connect to the server. Please check your network connection"
         );
       } else {
-        setError("An error occurred while sending the login request");
+        setError(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -129,6 +149,7 @@ const Login = () => {
               name="username"
               autoComplete="username"
               placeholder="Enter username"
+              value={values.username}
               onChange={(e) =>
                 setValues({ ...values, username: e.target.value })
               }
@@ -145,6 +166,7 @@ const Login = () => {
               name="password"
               autoComplete="current-password"
               placeholder="Enter password"
+              value={values.password}
               onChange={(e) =>
                 setValues({ ...values, password: e.target.value })
               }
