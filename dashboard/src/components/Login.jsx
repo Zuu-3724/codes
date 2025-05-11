@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from "react";
 import "./style.css";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../config/AuthContext";
+import { checkServerConnection, API_URL } from "../config/api.config";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { TokenManager, authAPI } from "../config/api.config";
+// Import icons
+import {
+  FaUser,
+  FaLock,
+  FaSignInAlt,
+  FaServer,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaSpinner,
+  FaCode,
+} from "react-icons/fa";
 
-// Cấu hình bảo mật và API
+// Cấu hình bảo mật
 const SECURITY_CONFIG = {
   CORS: {
     CREDENTIALS: true,
@@ -20,25 +32,81 @@ const Login = () => {
     username: "admin",
     password: "admin123",
   });
-  const [error, setError] = useState(null);
+  const [loginError, setLoginError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [serverStatus, setServerStatus] = useState(null);
+  const [checkingServer, setCheckingServer] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, user, error: authError, loading: authLoading } = useAuth();
 
-  // Kiểm tra xem người dùng đã đăng nhập chưa
+  // Forward to dashboard if already logged in
   useEffect(() => {
-    if (TokenManager.isAuthenticated()) {
-      navigate("/dashboard");
+    if (user) {
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from);
     }
-  }, [navigate]);
+  }, [user, navigate, location]);
+
+  // Show auth errors
+  useEffect(() => {
+    if (authError) {
+      setLoginError(authError);
+    }
+  }, [authError]);
+
+  // Server status check functions are kept but not automatically called
+  const checkServerStatus = async () => {
+    setCheckingServer(true);
+    try {
+      const isConnected = await checkServerConnection();
+      setServerStatus({
+        connected: isConnected,
+        message: isConnected ? "Server is running" : "Cannot connect to server",
+      });
+    } catch (error) {
+      setServerStatus({
+        connected: false,
+        message: `Connection error: ${error.message}`,
+      });
+    } finally {
+      setCheckingServer(false);
+    }
+  };
+
+  const testApiEndpoint = async () => {
+    setCheckingServer(true);
+    try {
+      const response = await axios.get(`${API_URL}/health`, {
+        timeout: 3000,
+      });
+      setServerStatus({
+        connected: true,
+        message: `Server is operational. Response: ${JSON.stringify(
+          response.data
+        )}`,
+        data: response.data,
+      });
+    } catch (error) {
+      console.error("API test error:", error);
+      setServerStatus({
+        connected: false,
+        message: `API Error: ${error.message}`,
+        error: error,
+      });
+    } finally {
+      setCheckingServer(false);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
-    setError(null);
+    setLoginError(null);
 
     // Validate input
     if (!values.username || !values.password) {
-      setError("Please enter complete login information");
+      setLoginError("Please enter complete login information");
       setIsLoading(false);
       return;
     }
@@ -46,85 +114,33 @@ const Login = () => {
     try {
       console.log("Attempting login with:", values.username);
 
-      // Using authAPI.login instead of direct axios call
-      const response = await authAPI.login({
+      const success = await login({
         username: values.username,
         password: values.password,
       });
 
-      console.log("Login response:", response);
-
-      if (response && response.Status) {
+      if (success) {
         console.log("Login successful");
-        // TokenManager.setToken is already called in authAPI.login
-        localStorage.setItem(
-          SECURITY_CONFIG.AUTH.USER_KEY,
-          JSON.stringify(response.Data)
-        );
         navigate("/dashboard");
       } else {
-        console.log("Login failed:", response.Message);
-        setError(response.Message || "Login failed");
+        console.log("Login failed");
+        setLoginError("Login failed. Please check your credentials.");
       }
     } catch (err) {
       console.error("Login error:", err);
-
-      // Handle direct error responses (non-HTTP errors)
-      if (err.response && err.response.data) {
-        const errorData = err.response.data;
-        if (errorData.Message) {
-          setError(errorData.Message);
-          setIsLoading(false);
-          return;
-        }
-      }
-
       // Detailed error display
       let errorMessage = "An error occurred during login";
 
       // Check for server error details
-      if (err.data && err.data.Message) {
+      if (err?.data?.Message) {
         errorMessage = err.data.Message;
-      } else if (err.data && err.data.detail) {
+      } else if (err?.data?.detail) {
         errorMessage = err.data.detail;
-      } else if (err.message) {
+      } else if (err?.message) {
         errorMessage = err.message;
       }
 
-      // Xử lý các loại lỗi cụ thể
-      if (err.status) {
-        // Server trả về lỗi
-        switch (err.status) {
-          case 401:
-            setError("Username or password is incorrect");
-            break;
-          case 403:
-            setError("You don't have permission to access");
-            break;
-          case 404:
-            setError("Account not found");
-            break;
-          case 422:
-            setError("Invalid request format. Please try again.");
-            break;
-          case 429:
-            setError("Too many login attempts. Please try again later");
-            break;
-          case 500:
-            setError(`Server error: ${errorMessage}`);
-            break;
-          default:
-            setError(errorMessage);
-        }
-      } else if (err.originalError?.code === "ECONNABORTED") {
-        setError("Login request timed out. Please try again");
-      } else if (err.isConnectionError) {
-        setError(
-          "Cannot connect to the server. Please check your network connection"
-        );
-      } else {
-        setError(errorMessage);
-      }
+      setLoginError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -132,21 +148,25 @@ const Login = () => {
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 loginPage">
-      <div className="p-3 rounded w-25 border loginForm">
-        {error && (
+      <div className="p-3 rounded border loginForm" style={{ width: "420px" }}>
+        <h2 className="text-center mb-4 fw-bold">HR & Payroll System</h2>
+
+        {loginError && (
           <div className="alert alert-danger" role="alert">
-            {error}
+            {loginError}
           </div>
         )}
-        <h2>Login</h2>
+
+        <h4 className="mb-3">Login</h4>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label htmlFor="username">
+            <label htmlFor="username" className="form-label">
               <strong>Username:</strong>
             </label>
             <input
               type="text"
               name="username"
+              id="username"
               autoComplete="username"
               placeholder="Enter username"
               value={values.username}
@@ -154,16 +174,17 @@ const Login = () => {
                 setValues({ ...values, username: e.target.value })
               }
               className="form-control rounded-0"
-              disabled={isLoading}
+              disabled={isLoading || authLoading}
             />
           </div>
-          <div className="mb-3">
-            <label htmlFor="password">
+          <div className="mb-4">
+            <label htmlFor="password" className="form-label">
               <strong>Password:</strong>
             </label>
             <input
               type="password"
               name="password"
+              id="password"
               autoComplete="current-password"
               placeholder="Enter password"
               value={values.password}
@@ -171,29 +192,22 @@ const Login = () => {
                 setValues({ ...values, password: e.target.value })
               }
               className="form-control rounded-0"
-              disabled={isLoading}
+              disabled={isLoading || authLoading}
             />
           </div>
           <button
             type="submit"
             className="btn btn-success w-100 rounded-0 mb-2"
-            disabled={isLoading}
+            disabled={isLoading || authLoading}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading || authLoading ? "Logging in..." : "Login"}
           </button>
-          <div className="mb-1">
-            <input
-              type="checkbox"
-              name="tick"
-              id="tick"
-              className="me-2"
-              disabled={isLoading}
-            />
-            <label htmlFor="password">
-              You agree to the terms and conditions
-            </label>
-          </div>
         </form>
+
+        <div className="mt-4 text-center">
+          <small>API URL: {API_URL}</small>
+          <p className="mt-2 mb-0">© 2025 HR & Payroll Management System</p>
+        </div>
       </div>
     </div>
   );

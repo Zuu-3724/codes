@@ -3,7 +3,8 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, date
 import logging
 from utils.db import execute_sqlserver_query
-from middleware.auth import check_role
+from middleware.auth import verify_token
+from middleware.api_auth import protect_payroll_endpoint
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from dependencies import get_db
@@ -37,15 +38,17 @@ async def get_cached_data(key: str, fetch_data_func):
     return data
 
 # Get salary information
-@payroll_router.get("/salary")
-async def get_salary(month: Optional[str] = None):
+@payroll_router.get("/salary", dependencies=[Depends(protect_payroll_endpoint())])
+async def get_salary(request: Request, month: Optional[str] = None):
     """Get salary information for all employees"""
     try:
         cache_key = f"salary-list-{month}" if month else "salary-list"
         
         async def fetch_data():
             logger.info("Fetching salary data from database")
-            query = """
+            
+            # Base query
+            query_base = """
                 SELECT 
                     d.DividendID, 
                     d.EmployeeID, 
@@ -85,14 +88,22 @@ async def get_salary(month: Optional[str] = None):
                     END
                 JOIN [HUMAN].[dbo].[Departments] dept ON e.DepartmentID = dept.DepartmentID
                 JOIN [HUMAN].[dbo].[Positions] pos ON e.PositionID = pos.PositionID
-                ORDER BY e.EmployeeID
             """
             
             # Prepare parameters
             params = {"Month": month} if month else {}
             
+            # Filter to only show the current employee's data if needed
+            if hasattr(request.state, 'self_only') and request.state.self_only:
+                employee_id = request.state.id
+                logger.info(f"Filtering salary data to only show employee ID: {employee_id}")
+                query_base += " WHERE e.EmployeeID = @EmployeeID"
+                params["EmployeeID"] = employee_id
+            
+            query_base += " ORDER BY e.EmployeeID"
+            
             # Execute query
-            return await execute_sqlserver_query(query, params)
+            return await execute_sqlserver_query(query_base, params)
         
         data = await get_cached_data(cache_key, fetch_data)
         
@@ -105,8 +116,8 @@ async def get_salary(month: Optional[str] = None):
         )
 
 # Get salary history for an employee
-@payroll_router.get("/salary-history/{employee_id}")
-async def get_salary_history(employee_id: str):
+@payroll_router.get("/salary-history/{employee_id}", dependencies=[Depends(protect_payroll_endpoint("employee_id"))])
+async def get_salary_history(employee_id: str, request: Request):
     """Get salary history for a specific employee"""
     try:
         cache_key = f"salary-history-{employee_id}"
@@ -140,12 +151,14 @@ async def get_salary_history(employee_id: str):
         )
 
 # Get attendance data
-@payroll_router.get("/attendance")
-async def get_attendance():
+@payroll_router.get("/attendance", dependencies=[Depends(protect_payroll_endpoint())])
+async def get_attendance(request: Request):
     """Get attendance data"""
     try:
         logger.info("Fetching attendance data from database")
-        query = """
+        
+        # Base query
+        query_base = """
             SELECT 
                 a.AttendanceID,
                 a.EmployeeID,
@@ -158,10 +171,21 @@ async def get_attendance():
             FROM [HUMAN].[dbo].[Attendance] a
             JOIN [HUMAN].[dbo].[Employees] e ON a.EmployeeID = e.EmployeeID
             JOIN [HUMAN].[dbo].[Departments] d ON e.DepartmentID = d.DepartmentID
-            ORDER BY a.AttendanceMonth DESC
         """
         
-        data = await execute_sqlserver_query(query)
+        params = {}
+        
+        # Filter to only show the current employee's data if needed
+        if hasattr(request.state, 'self_only') and request.state.self_only:
+            employee_id = request.state.id
+            logger.info(f"Filtering attendance data to only show employee ID: {employee_id}")
+            query_base += " WHERE a.EmployeeID = @EmployeeID"
+            params["EmployeeID"] = employee_id
+        
+        query_base += " ORDER BY a.AttendanceMonth DESC"
+        
+        # Execute query
+        data = await execute_sqlserver_query(query_base, params)
         return {"Status": True, "Data": data}
         
     except Exception as e:
@@ -172,8 +196,8 @@ async def get_attendance():
         )
 
 # Update salary information
-@payroll_router.put("/update-salary/{employee_id}", dependencies=[Depends(check_role(["Admin", "HR Manager"]))])
-async def update_salary(employee_id: str, data: Dict[str, Any]):
+@payroll_router.put("/update-salary/{employee_id}", dependencies=[Depends(protect_payroll_endpoint("employee_id"))])
+async def update_salary(employee_id: str, data: Dict[str, Any], request: Request):
     """Update salary information for an employee"""
     try:
         salary = data.get("Salary")
@@ -199,22 +223,20 @@ async def update_salary(employee_id: str, data: Dict[str, Any]):
             "Salary": salary
         })
         
-        # Add to dividend history
+        # Add salary update record
         insert_query = """
             INSERT INTO [HUMAN].[dbo].[Dividends] 
-            (EmployeeID, DividendAmount, DividendDate, Description)
-            VALUES (@EmployeeID, @DividendAmount, @DividendDate, @Reason)
+            (EmployeeID, DividendAmount, DividendDate, Reason) 
+            VALUES (@EmployeeID, @Salary, @EffectiveDate, @Reason)
         """
         await execute_sqlserver_query(insert_query, {
             "EmployeeID": employee_id,
-            "DividendAmount": salary,
-            "DividendDate": effective_date,
+            "Salary": salary,
+            "EffectiveDate": effective_date,
             "Reason": reason
         })
         
-        # Clear relevant caches
-        if "salary-list" in cache:
-            del cache["salary-list"]
+        # Clear cache
         if f"salary-history-{employee_id}" in cache:
             del cache[f"salary-history-{employee_id}"]
         
@@ -225,7 +247,7 @@ async def update_salary(employee_id: str, data: Dict[str, Any]):
         logger.error(f"Error updating salary for employee {employee_id}: {str(e)}")
         raise HTTPException(
             status_code=500, 
-            detail={"Status": False, "Error": str(e), "Message": "Failed to update salary information"}
+            detail={"Status": False, "Error": str(e), "Message": "Failed to update salary"}
         )
 
 # Get leave statistics
@@ -297,7 +319,7 @@ async def get_monthly_payroll(year: int, month: int):
             detail={"Status": False, "Error": str(e)}
         )
 
-@payroll_router.post("/add-allowance", dependencies=[Depends(check_role(["Admin", "HR Manager"]))])
+@payroll_router.post("/add-allowance", dependencies=[Depends(protect_payroll_endpoint())])
 async def add_allowance(
     employee_id: str,
     amount: float,
@@ -330,7 +352,7 @@ async def add_allowance(
             detail={"Status": False, "Error": str(e)}
         )
 
-@payroll_router.post("/add-deduction", dependencies=[Depends(check_role(["Admin", "HR Manager"]))])
+@payroll_router.post("/add-deduction", dependencies=[Depends(protect_payroll_endpoint())])
 async def add_deduction(
     employee_id: str,
     amount: float,
@@ -449,7 +471,7 @@ async def get_employee_deductions(
             detail={"Status": False, "Error": str(e)}
         )
 
-@payroll_router.delete("/delete-allowance/{allowance_id}", dependencies=[Depends(check_role(["Admin", "HR Manager"]))])
+@payroll_router.delete("/delete-allowance/{allowance_id}", dependencies=[Depends(protect_payroll_endpoint())])
 async def delete_allowance(allowance_id: int):
     """Delete an allowance"""
     try:
@@ -471,7 +493,7 @@ async def delete_allowance(allowance_id: int):
             detail={"Status": False, "Error": str(e)}
         )
 
-@payroll_router.delete("/delete-deduction/{deduction_id}", dependencies=[Depends(check_role(["Admin", "HR Manager"]))])
+@payroll_router.delete("/delete-deduction/{deduction_id}", dependencies=[Depends(protect_payroll_endpoint())])
 async def delete_deduction(deduction_id: int):
     """Delete a deduction"""
     try:

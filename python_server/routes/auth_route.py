@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Dict, Any, Optional
 import jwt
@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import logging
 from utils.db import execute_mysql_query
 import os
+from middleware.auth import verify_token, Roles
+from middleware.api_auth import RoleBasedAccessControl, protect_employee_endpoint, protect_payroll_endpoint, admin_only
 
 # Initialize logger
 logger = logging.getLogger("auth")
@@ -343,4 +345,60 @@ async def get_roles():
         raise HTTPException(
             status_code=500,
             detail={"Status": False, "Error": str(e)}
-        ) 
+        )
+
+@auth_router.get("/test-auth", dependencies=[Depends(verify_token)])
+async def test_auth(request: Request):
+    """Test the authentication and get current user role"""
+    return {
+        "Status": True,
+        "Message": "Authentication successful",
+        "Data": {
+            "id": request.state.id,
+            "username": request.state.user.get("username"),
+            "role": request.state.role
+        }
+    }
+
+@auth_router.get("/test-admin", dependencies=[Depends(admin_only())])
+async def test_admin_access(request: Request):
+    """Test the Admin role access"""
+    return {
+        "Status": True,
+        "Message": "Admin access granted",
+        "Data": {
+            "id": request.state.id,
+            "username": request.state.user.get("username"),
+            "role": request.state.role
+        }
+    }
+
+@auth_router.get("/test-employee", dependencies=[Depends(protect_employee_endpoint())])
+async def test_employee_access(request: Request):
+    """Test the Employee data access permissions"""
+    # This will vary depending on user role - will filter employee data for employees 
+    # but allow full access for admins, HR managers, and view-only for payroll managers
+    return {
+        "Status": True,
+        "Message": "Employee data access granted",
+        "Data": {
+            "role": request.state.role,
+            "self_only": hasattr(request.state, 'self_only') and request.state.self_only,
+            "id": request.state.id
+        }
+    }
+
+@auth_router.get("/test-payroll", dependencies=[Depends(protect_payroll_endpoint())])
+async def test_payroll_access(request: Request):
+    """Test the Payroll data access permissions"""
+    # This will vary depending on user role - will filter payroll data for employees
+    # but allow full access for admins, payroll managers, and view-only for HR managers
+    return {
+        "Status": True,
+        "Message": "Payroll data access granted",
+        "Data": {
+            "role": request.state.role,
+            "self_only": hasattr(request.state, 'self_only') and request.state.self_only,
+            "id": request.state.id
+        }
+    } 

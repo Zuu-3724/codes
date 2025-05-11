@@ -8,6 +8,11 @@ import {
   FaSpinner,
   FaDownload,
   FaExclamationTriangle,
+  FaFilter,
+  FaSync,
+  FaSearch,
+  FaCalendarDay,
+  FaCalendarWeek,
 } from "react-icons/fa";
 import {
   getAuthConfig,
@@ -15,6 +20,7 @@ import {
   demoDataAPI,
 } from "../config/api.config";
 import { useNavigate } from "react-router-dom";
+import { PageHeader, NoDataMessage, DashboardCard } from "./UI";
 
 const Attendance = () => {
   const navigate = useNavigate();
@@ -29,11 +35,40 @@ const Attendance = () => {
   const [summary, setSummary] = useState(null);
   const [activeTab, setActiveTab] = useState("monthly");
   const [usingDemoData, setUsingDemoData] = useState(false);
+  const [attendanceSummary, setAttendanceSummary] = useState({
+    present: 0,
+    absent: 0,
+    late: 0,
+    leave: 0,
+  });
 
   useEffect(() => {
     fetchAttendanceData();
     fetchDepartments();
   }, [navigate, month, year, activeTab]);
+
+  useEffect(() => {
+    // Calculate summary when records change
+    if (attendanceRecords.length > 0) {
+      const present = attendanceRecords.filter(
+        (r) => r.Status === "Present"
+      ).length;
+      const absent = attendanceRecords.filter(
+        (r) => r.Status === "Absent"
+      ).length;
+      const late = attendanceRecords.filter((r) => r.Status === "Late").length;
+      const leave = attendanceRecords.filter(
+        (r) => r.Status === "Leave"
+      ).length;
+
+      setAttendanceSummary({
+        present,
+        absent,
+        late,
+        leave,
+      });
+    }
+  }, [attendanceRecords]);
 
   const fetchAttendanceData = async () => {
     setLoading(true);
@@ -52,9 +87,7 @@ const Attendance = () => {
       if (response.data.Status) {
         setAttendanceRecords(response.data.Data);
         setUsingDemoData(true);
-        setError(
-          "Đang sử dụng dữ liệu mẫu. Hệ thống đang trong giai đoạn phát triển."
-        );
+        setError("Using sample data. The system is currently in development.");
       } else {
         throw new Error("Could not fetch attendance data from database");
       }
@@ -66,14 +99,14 @@ const Attendance = () => {
         return;
       }
 
-      // Khi không kết nối được database, sử dụng demo data
+      // When database connection fails, use demo data
       console.log("Using demo attendance data");
       const demoData = [
         {
           AttendanceID: 1,
           EmployeeID: "E001",
-          EmployeeName: "Nguyễn Văn A",
-          Date: "2025-04-27",
+          EmployeeName: "John Smith",
+          Date: "2025-05-01",
           TimeIn: "08:02",
           TimeOut: "17:30",
           Status: "Present",
@@ -82,8 +115,8 @@ const Attendance = () => {
         {
           AttendanceID: 2,
           EmployeeID: "E002",
-          EmployeeName: "Trần Thị B",
-          Date: "2025-04-27",
+          EmployeeName: "Mary Johnson",
+          Date: "2025-05-01",
           TimeIn: "08:15",
           TimeOut: "17:45",
           Status: "Present",
@@ -92,8 +125,8 @@ const Attendance = () => {
         {
           AttendanceID: 3,
           EmployeeID: "E003",
-          EmployeeName: "Lê Văn C",
-          Date: "2025-04-27",
+          EmployeeName: "David Wilson",
+          Date: "2025-05-01",
           TimeIn: "07:58",
           TimeOut: "17:20",
           Status: "Present",
@@ -102,8 +135,8 @@ const Attendance = () => {
         {
           AttendanceID: 4,
           EmployeeID: "E002",
-          EmployeeName: "Trần Thị B",
-          Date: "2025-04-28",
+          EmployeeName: "Mary Johnson",
+          Date: "2025-05-02",
           TimeIn: "09:10",
           TimeOut: "17:15",
           Status: "Late",
@@ -112,8 +145,8 @@ const Attendance = () => {
         {
           AttendanceID: 5,
           EmployeeID: "E003",
-          EmployeeName: "Lê Văn C",
-          Date: "2025-04-28",
+          EmployeeName: "David Wilson",
+          Date: "2025-05-02",
           TimeIn: "",
           TimeOut: "",
           Status: "Absent",
@@ -123,7 +156,7 @@ const Attendance = () => {
       setAttendanceRecords(demoData);
       setUsingDemoData(true);
       setError(
-        "Đang sử dụng dữ liệu demo do không kết nối được tới máy chủ cơ sở dữ liệu"
+        "Using demo data because connection to the database server failed"
       );
     } finally {
       setLoading(false);
@@ -153,7 +186,7 @@ const Attendance = () => {
       }
     } catch (error) {
       console.error("Error fetching departments:", error);
-      // Sử dụng demo departments nếu không kết nối được
+      // Use demo departments if connection fails
       const demoDepts = [
         { id: 1, name: "IT" },
         { id: 2, name: "HR" },
@@ -254,49 +287,115 @@ const Attendance = () => {
     (_, i) => new Date().getFullYear() - 2 + i
   );
 
+  // Actions for PageHeader
+  const headerActions = [
+    {
+      icon: <FaDownload />,
+      label: "Export Report",
+      onClick: exportAttendanceReport,
+      variant: "success",
+    },
+    {
+      icon: <FaSync />,
+      label: "Refresh",
+      onClick: fetchAttendanceData,
+      variant: "outline-primary",
+    },
+  ];
+
   return (
     <div className="container-fluid px-4">
-      <h1 className="mt-4 mb-4">
-        <FaCalendarAlt className="me-2" />
-        Attendance Management
-      </h1>
+      <PageHeader
+        icon={<FaCalendarAlt className="me-2" />}
+        title="Attendance Management"
+        actions={headerActions}
+        loading={loading}
+      />
 
-      {error && (
-        <div className="alert alert-danger" role="alert">
-          {error}
+      {usingDemoData && (
+        <div
+          className="alert alert-warning alert-dismissible fade show mb-4"
+          role="alert"
+        >
+          <FaExclamationTriangle className="me-2" />
+          Using sample data. The system is currently in development phase.
           <button
-            className="btn-close float-end"
-            onClick={() => setError(null)}
+            type="button"
+            className="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
           ></button>
         </div>
       )}
 
-      {usingDemoData && (
-        <div className="alert alert-warning d-flex align-items-center">
-          <FaExclamationTriangle className="me-2" />
-          <div>
-            Sử dụng dữ liệu mẫu. Một số tính năng có thể không hoạt động đầy đủ.
-            <button
-              className="btn btn-sm btn-outline-secondary ms-3"
-              onClick={() => {
-                fetchAttendanceData();
-                fetchDepartments();
-              }}
-            >
-              Thử lại kết nối
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Filter Controls */}
+      {/* Summary Cards */}
       <div className="row mb-4">
-        <div className="col-md-9">
-          <div className="card shadow">
+        <div className="col-md-3">
+          <DashboardCard
+            icon={<FaCalendarCheck />}
+            title="Present"
+            value={attendanceSummary.present}
+            subtitle={`${(
+              (attendanceSummary.present / attendanceRecords.length) * 100 || 0
+            ).toFixed(1)}%`}
+            colorScheme="green"
+          />
+        </div>
+        <div className="col-md-3">
+          <DashboardCard
+            icon={<FaCalendarTimes />}
+            title="Absent"
+            value={attendanceSummary.absent}
+            subtitle={`${(
+              (attendanceSummary.absent / attendanceRecords.length) * 100 || 0
+            ).toFixed(1)}%`}
+            colorScheme="red"
+          />
+        </div>
+        <div className="col-md-3">
+          <DashboardCard
+            icon={<FaUserClock />}
+            title="Late"
+            value={attendanceSummary.late}
+            subtitle={`${(
+              (attendanceSummary.late / attendanceRecords.length) * 100 || 0
+            ).toFixed(1)}%`}
+            colorScheme="orange"
+          />
+        </div>
+        <div className="col-md-3">
+          <DashboardCard
+            icon={<FaCalendarDay />}
+            title="Leave"
+            value={attendanceSummary.leave}
+            subtitle={`${(
+              (attendanceSummary.leave / attendanceRecords.length) * 100 || 0
+            ).toFixed(1)}%`}
+            colorScheme="blue"
+          />
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="row mb-4">
+        <div className="col-lg-12">
+          <div className="card border-0 shadow-sm">
             <div className="card-body">
-              <div className="row align-items-center">
-                <div className="col-md-3">
+              <div className="row">
+                <div className="col-md-6">
+                  <h5 className="card-title mb-3">
+                    <FaFilter className="me-2" />
+                    Filter Options
+                  </h5>
+                </div>
+              </div>
+              <div className="row">
+                <div className="col-md-3 mb-3">
+                  <label htmlFor="month" className="form-label">
+                    Month
+                  </label>
                   <select
+                    id="month"
                     className="form-select"
                     value={month}
                     onChange={(e) => setMonth(parseInt(e.target.value))}
@@ -308,31 +407,43 @@ const Attendance = () => {
                     ))}
                   </select>
                 </div>
-                <div className="col-md-2">
+                <div className="col-md-3 mb-3">
+                  <label htmlFor="year" className="form-label">
+                    Year
+                  </label>
                   <select
+                    id="year"
                     className="form-select"
                     value={year}
                     onChange={(e) => setYear(parseInt(e.target.value))}
                   >
-                    {years.map((y) => (
+                    {[2023, 2024, 2025, 2026].map((y) => (
                       <option key={y} value={y}>
                         {y}
                       </option>
                     ))}
                   </select>
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-3 mb-3">
+                  <label htmlFor="employeeFilter" className="form-label">
+                    <FaSearch className="me-1" /> Search Employee
+                  </label>
                   <input
                     type="text"
+                    id="employeeFilter"
                     className="form-control"
-                    placeholder="Search Employee"
+                    placeholder="Search..."
                     value={employeeFilter}
                     onChange={(e) => setEmployeeFilter(e.target.value)}
                     onKeyPress={handleKeyPress}
                   />
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-3 mb-3">
+                  <label htmlFor="departmentFilter" className="form-label">
+                    Department
+                  </label>
                   <select
+                    id="departmentFilter"
                     className="form-select"
                     value={departmentFilter}
                     onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -345,276 +456,106 @@ const Attendance = () => {
                     ))}
                   </select>
                 </div>
-                <div className="col-md-1">
-                  <button
-                    className="btn btn-primary w-100"
-                    onClick={fetchAttendanceData}
-                  >
-                    <FaCalendarCheck />
-                  </button>
-                </div>
               </div>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <button
-            className="btn btn-success w-100 h-100"
-            onClick={exportAttendanceReport}
-          >
-            <FaDownload className="me-2" /> Export Report
-          </button>
-        </div>
       </div>
 
-      {/* Tab Navigation */}
-      <ul className="nav nav-tabs mb-4">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "monthly" ? "active" : ""}`}
-            onClick={() => setActiveTab("monthly")}
-          >
-            <FaCalendarAlt className="me-2" /> Monthly View
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "daily" ? "active" : ""}`}
-            onClick={() => setActiveTab("daily")}
-          >
-            <FaUserClock className="me-2" /> Daily View
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "summary" ? "active" : ""}`}
-            onClick={() => setActiveTab("summary")}
-          >
-            <FaCalendarCheck className="me-2" /> Summary
-          </button>
-        </li>
-      </ul>
+      {/* View Tabs */}
+      <div className="mb-4">
+        <ul className="nav nav-pills">
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "daily" ? "active" : ""}`}
+              onClick={() => setActiveTab("daily")}
+            >
+              <FaCalendarDay className="me-1" /> Daily View
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "monthly" ? "active" : ""}`}
+              onClick={() => setActiveTab("monthly")}
+            >
+              <FaCalendarWeek className="me-1" /> Monthly View
+            </button>
+          </li>
+        </ul>
+      </div>
 
-      {loading ? (
-        <div className="text-center py-5">
-          <FaSpinner className="fa-spin me-2" size={24} />
-          <p className="mt-2">Loading attendance data...</p>
+      {/* Data Display */}
+      <div className="card border-0 shadow-sm">
+        <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 className="mb-0">
+            Attendance Record - {months[month - 1]} {year}
+          </h5>
         </div>
-      ) : activeTab === "summary" ? (
-        <div className="row">
-          {/* Summary View */}
-          {summary && (
-            <>
-              <div className="col-md-12 mb-4">
-                <div className="card shadow">
-                  <div className="card-header bg-primary text-white">
-                    <h5 className="mb-0">
-                      Overall Attendance Summary - {months[month - 1]} {year}
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    <div className="row">
-                      <div className="col-md-3 text-center">
-                        <div className="card bg-light p-3">
-                          <h2>{summary.overallStats.totalEmployees}</h2>
-                          <p className="mb-0">Total Employees</p>
-                        </div>
-                      </div>
-                      <div className="col-md-3 text-center">
-                        <div className="card bg-success text-white p-3">
-                          <h2>
-                            {summary.overallStats.averagePresentRate.toFixed(1)}
-                            %
-                          </h2>
-                          <p className="mb-0">Average Presence</p>
-                        </div>
-                      </div>
-                      <div className="col-md-3 text-center">
-                        <div className="card bg-danger text-white p-3">
-                          <h2>
-                            {summary.overallStats.averageAbsentRate.toFixed(1)}%
-                          </h2>
-                          <p className="mb-0">Average Absence</p>
-                        </div>
-                      </div>
-                      <div className="col-md-3 text-center">
-                        <div className="card bg-warning text-dark p-3">
-                          <h2>
-                            {summary.overallStats.averageLateRate.toFixed(1)}%
-                          </h2>
-                          <p className="mb-0">Average Late</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        <div className="card-body">
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary mb-3" role="status">
+                <span className="visually-hidden">Loading...</span>
               </div>
-
-              <div className="col-md-12">
-                <div className="card shadow">
-                  <div className="card-header bg-primary text-white">
-                    <h5 className="mb-0">Department Attendance Statistics</h5>
-                  </div>
-                  <div className="card-body">
-                    <div className="table-responsive">
-                      <table className="table table-striped">
-                        <thead>
-                          <tr>
-                            <th>Department</th>
-                            <th>Present Rate</th>
-                            <th>Absent Rate</th>
-                            <th>Late Rate</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {summary.departmentStats.map((dept, index) => (
-                            <tr key={index}>
-                              <td>{dept.department}</td>
-                              <td>
-                                <div className="progress">
-                                  <div
-                                    className="progress-bar bg-success"
-                                    role="progressbar"
-                                    style={{ width: `${dept.presentRate}%` }}
-                                    aria-valuenow={dept.presentRate}
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                  >
-                                    {dept.presentRate}%
-                                  </div>
-                                </div>
-                              </td>
-                              <td>
-                                <div className="progress">
-                                  <div
-                                    className="progress-bar bg-danger"
-                                    role="progressbar"
-                                    style={{ width: `${dept.absentRate}%` }}
-                                    aria-valuenow={dept.absentRate}
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                  >
-                                    {dept.absentRate}%
-                                  </div>
-                                </div>
-                              </td>
-                              <td>
-                                <div className="progress">
-                                  <div
-                                    className="progress-bar bg-warning"
-                                    role="progressbar"
-                                    style={{ width: `${dept.lateRate}%` }}
-                                    aria-valuenow={dept.lateRate}
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                  >
-                                    {dept.lateRate}%
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
+              <p>Loading attendance data...</p>
+            </div>
+          ) : filteredRecords.length > 0 ? (
+            <div className="table-responsive">
+              <table className="table table-hover align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th>EMPLOYEE ID</th>
+                    <th>EMPLOYEE NAME</th>
+                    <th>DEPARTMENT</th>
+                    <th>STATUS</th>
+                    <th>WORK HOURS</th>
+                    <th>PRESENT DAYS</th>
+                    <th>ABSENT DAYS</th>
+                    <th>LATE DAYS</th>
+                    <th>LEAVE DAYS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRecords.map((record) => (
+                    <tr key={record.AttendanceID}>
+                      <td>{record.EmployeeID}</td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="bg-light rounded-circle p-2 me-2">
+                            <FaUserClock className="text-primary" />
+                          </div>
+                          {record.EmployeeName}
+                        </div>
+                      </td>
+                      <td>{record.Department}</td>
+                      <td>
+                        <span
+                          className={`badge ${getStatusClass(record.Status)}`}
+                        >
+                          {record.Status}
+                        </span>
+                      </td>
+                      <td>{record.TimeIn && record.TimeOut ? "8.0" : "0.0"}</td>
+                      <td>0</td>
+                      <td>0</td>
+                      <td>0</td>
+                      <td>0</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <NoDataMessage
+              title="No Attendance Records Found"
+              message="No attendance records were found for the selected criteria."
+              type="search"
+              onAction={fetchAttendanceData}
+              actionText="Refresh Data"
+            />
           )}
         </div>
-      ) : (
-        <div className="card shadow">
-          <div className="card-header bg-primary text-white">
-            <h5 className="mb-0">
-              {activeTab === "monthly"
-                ? "Monthly Attendance Record"
-                : "Daily Attendance Record"}{" "}
-              - {months[month - 1]} {year}
-            </h5>
-          </div>
-          <div className="card-body">
-            {filteredRecords.length === 0 ? (
-              <div className="alert alert-info">
-                No attendance records found for the selected criteria.
-              </div>
-            ) : (
-              <div className="table-responsive">
-                <table className="table table-striped">
-                  <thead>
-                    <tr>
-                      <th>Employee ID</th>
-                      <th>Employee Name</th>
-                      <th>Department</th>
-                      {activeTab === "daily" && <th>Date</th>}
-                      <th>Status</th>
-                      {activeTab === "daily" && (
-                        <>
-                          <th>Check In</th>
-                          <th>Check Out</th>
-                        </>
-                      )}
-                      <th>Work Hours</th>
-                      {activeTab === "daily" ? (
-                        <>
-                          <th>Late (min)</th>
-                          <th>OT (hrs)</th>
-                        </>
-                      ) : (
-                        <>
-                          <th>Present Days</th>
-                          <th>Absent Days</th>
-                          <th>Late Days</th>
-                          <th>Leave Days</th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRecords.map((record) => (
-                      <tr key={record.AttendanceID}>
-                        <td>{record.EmployeeID}</td>
-                        <td>{record.EmployeeName}</td>
-                        <td>{record.Department}</td>
-                        {activeTab === "daily" && (
-                          <td>{new Date(record.Date).toLocaleDateString()}</td>
-                        )}
-                        <td>
-                          <span
-                            className={`badge ${getStatusClass(record.Status)}`}
-                          >
-                            {record.Status}
-                          </span>
-                        </td>
-                        {activeTab === "daily" && (
-                          <>
-                            <td>{record.TimeIn || "N/A"}</td>
-                            <td>{record.TimeOut || "N/A"}</td>
-                          </>
-                        )}
-                        <td>{record.WorkHours?.toFixed(1) || "0.0"}</td>
-                        {activeTab === "daily" ? (
-                          <>
-                            <td>{record.LateMinutes || "0"}</td>
-                            <td>{record.Overtime || "0"}</td>
-                          </>
-                        ) : (
-                          <>
-                            <td>{record.PresentDays || "0"}</td>
-                            <td>{record.AbsentDays || "0"}</td>
-                            <td>{record.LateDays || "0"}</td>
-                            <td>{record.LeaveDays || "0"}</td>
-                          </>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

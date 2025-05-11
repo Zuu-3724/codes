@@ -3,7 +3,8 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, validator, EmailStr
 from datetime import date, datetime
 import logging
-from middleware.auth import check_role, verify_token
+from middleware.auth import verify_token
+from middleware.api_auth import protect_employee_endpoint
 from utils.db import execute_sqlserver_query, execute_mysql_query
 
 # Logger
@@ -50,7 +51,7 @@ class EmployeeCreate(BaseModel):
         return v
 
 # Get all employees with department and position info
-@employee_router.get("/", dependencies=[Depends(verify_token)])
+@employee_router.get("/", dependencies=[Depends(protect_employee_endpoint())])
 async def get_employees(request: Request):
     """
     Get all employees with their department and position information
@@ -58,16 +59,35 @@ async def get_employees(request: Request):
     try:
         logger.info("Getting list of all employees")
         
-        query = """
-            SELECT e.EmployeeID, e.FullName, e.DateOfBirth, e.Gender, 
-                   e.PhoneNumber, e.Email, e.HireDate, e.Status, 
-                   d.DepartmentName, p.PositionName 
-            FROM [HUMAN].[dbo].[Employees] e
-            JOIN [HUMAN].[dbo].[Departments] d ON e.DepartmentID = d.DepartmentID
-            JOIN [HUMAN].[dbo].[Positions] p ON e.PositionID = p.PositionID
-        """
+        # Check if we should filter to only show the current employee's data
+        if hasattr(request.state, 'self_only') and request.state.self_only:
+            employee_id = request.state.id
+            logger.info(f"Filtering employee list to only show employee ID: {employee_id}")
+            
+            query = """
+                SELECT e.EmployeeID, e.FullName, e.DateOfBirth, e.Gender, 
+                       e.PhoneNumber, e.Email, e.HireDate, e.Status, 
+                       d.DepartmentName, p.PositionName 
+                FROM [HUMAN].[dbo].[Employees] e
+                JOIN [HUMAN].[dbo].[Departments] d ON e.DepartmentID = d.DepartmentID
+                JOIN [HUMAN].[dbo].[Positions] p ON e.PositionID = p.PositionID
+                WHERE e.EmployeeID = @EmployeeID
+            """
+            
+            results = await execute_sqlserver_query(query, {"EmployeeID": employee_id})
+        else:
+            # Regular query for admins, HR managers, and payroll managers
+            query = """
+                SELECT e.EmployeeID, e.FullName, e.DateOfBirth, e.Gender, 
+                       e.PhoneNumber, e.Email, e.HireDate, e.Status, 
+                       d.DepartmentName, p.PositionName 
+                FROM [HUMAN].[dbo].[Employees] e
+                JOIN [HUMAN].[dbo].[Departments] d ON e.DepartmentID = d.DepartmentID
+                JOIN [HUMAN].[dbo].[Positions] p ON e.PositionID = p.PositionID
+            """
+            
+            results = await execute_sqlserver_query(query)
         
-        results = await execute_sqlserver_query(query)
         return {"Status": True, "Data": results}
     
     except Exception as e:
@@ -78,7 +98,7 @@ async def get_employees(request: Request):
         )
 
 # Get all employees from MySQL database
-@employee_router.get("/mysql", dependencies=[Depends(verify_token)])
+@employee_router.get("/mysql", dependencies=[Depends(protect_employee_endpoint())])
 async def get_employees_mysql(request: Request):
     """
     Get all employees with their department and position information from MySQL
@@ -86,26 +106,54 @@ async def get_employees_mysql(request: Request):
     try:
         logger.info("Getting list of all employees from MySQL")
         
-        query = """
-            SELECT 
-                e.EmployeeID, 
-                e.FirstName, 
-                e.LastName, 
-                e.Gender, 
-                e.DateOfBirth, 
-                e.Email, 
-                e.Phone as PhoneNumber, 
-                e.JoinDate as HireDate, 
-                e.Status,
-                e.Salary, 
-                d.DepartmentName, 
-                p.PositionName 
-            FROM employee e
-            JOIN department d ON e.DepartmentID = d.DepartmentID
-            JOIN position p ON e.PositionID = p.PositionID
-        """
-        
-        results = await execute_mysql_query(query)
+        # Check if we should filter to only show the current employee's data
+        if hasattr(request.state, 'self_only') and request.state.self_only:
+            employee_id = request.state.id
+            logger.info(f"Filtering employee list to only show employee ID: {employee_id}")
+            
+            query = """
+                SELECT 
+                    e.EmployeeID, 
+                    e.FirstName, 
+                    e.LastName, 
+                    e.Gender, 
+                    e.DateOfBirth, 
+                    e.Email, 
+                    e.Phone as PhoneNumber, 
+                    e.JoinDate as HireDate, 
+                    e.Status,
+                    e.Salary, 
+                    d.DepartmentName, 
+                    p.PositionName 
+                FROM employee e
+                JOIN department d ON e.DepartmentID = d.DepartmentID
+                JOIN position p ON e.PositionID = p.PositionID
+                WHERE e.EmployeeID = %s
+            """
+            
+            results = await execute_mysql_query(query, (employee_id,))
+        else:
+            # Regular query for admins, HR managers, and payroll managers
+            query = """
+                SELECT 
+                    e.EmployeeID, 
+                    e.FirstName, 
+                    e.LastName, 
+                    e.Gender, 
+                    e.DateOfBirth, 
+                    e.Email, 
+                    e.Phone as PhoneNumber, 
+                    e.JoinDate as HireDate, 
+                    e.Status,
+                    e.Salary, 
+                    d.DepartmentName, 
+                    p.PositionName 
+                FROM employee e
+                JOIN department d ON e.DepartmentID = d.DepartmentID
+                JOIN position p ON e.PositionID = p.PositionID
+            """
+            
+            results = await execute_mysql_query(query)
         
         # Format the results to match the frontend expectations
         formatted_results = []
@@ -131,7 +179,7 @@ async def get_employees_mysql(request: Request):
         )
 
 # Alternative endpoint for employee list with more detailed error handling
-@employee_router.get("/list")
+@employee_router.get("/list", dependencies=[Depends(protect_employee_endpoint())])
 async def get_employee_list(request: Request, 
                            department_id: Optional[int] = None,
                            status: Optional[str] = None):
@@ -141,8 +189,8 @@ async def get_employee_list(request: Request,
     try:
         logger.info("Getting employee list with filters")
         
-        # Build query with parameters
-        query = """
+        # Build base query with parameters
+        query_base = """
             SELECT e.EmployeeID, e.FullName, e.DateOfBirth, e.Gender, 
                    e.PhoneNumber, e.Email, e.HireDate, e.Status, 
                    d.DepartmentName, p.PositionName 
@@ -156,15 +204,23 @@ async def get_employee_list(request: Request,
         
         # Add filters if provided
         if department_id:
-            query += " AND e.DepartmentID = @DepartmentID"
+            query_base += " AND e.DepartmentID = @DepartmentID"
             params["DepartmentID"] = department_id
             
         if status:
-            query += " AND e.Status = @Status"
+            query_base += " AND e.Status = @Status"
             params["Status"] = status
+        
+        # Check if we should filter to only show the current employee's data
+        if hasattr(request.state, 'self_only') and request.state.self_only:
+            employee_id = request.state.id
+            logger.info(f"Filtering employee list to only show employee ID: {employee_id}")
+            
+            query_base += " AND e.EmployeeID = @EmployeeID"
+            params["EmployeeID"] = employee_id
             
         # Execute query
-        results = await execute_sqlserver_query(query, params)
+        results = await execute_sqlserver_query(query_base, params)
         return {"Status": True, "Data": results}
             
     except Exception as e:
@@ -175,7 +231,7 @@ async def get_employee_list(request: Request,
         )
 
 # Add a new employee
-@employee_router.post("/add")
+@employee_router.post("/add", dependencies=[Depends(protect_employee_endpoint())])
 async def add_employee(employee: EmployeeCreate,
                       request: Request):
     """
@@ -237,7 +293,7 @@ async def add_employee(employee: EmployeeCreate,
         )
 
 # Get employee by ID
-@employee_router.get("/{employee_id}")
+@employee_router.get("/{employee_id}", dependencies=[Depends(protect_employee_endpoint("employee_id"))])
 async def get_employee(employee_id: str, request: Request):
     """
     Get employee details by ID
@@ -283,7 +339,7 @@ async def get_employee(employee_id: str, request: Request):
         )
 
 # Update employee
-@employee_router.put("/update/{employee_id}")
+@employee_router.put("/update/{employee_id}", dependencies=[Depends(protect_employee_endpoint("employee_id"))])
 async def update_employee(
     employee_id: str,
     employee_data: Dict[str, Any],

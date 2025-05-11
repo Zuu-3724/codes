@@ -5,11 +5,31 @@ import {
   getAuthConfig,
   checkServerConnection,
   demoDataAPI,
+  API_URL,
 } from "../config/api.config";
-import { FaExclamationTriangle } from "react-icons/fa";
+import {
+  FaExclamationTriangle,
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaUserPlus,
+  FaSearch,
+  FaFilter,
+  FaUsers,
+  FaSitemap,
+  FaUserTie,
+  FaUserCog,
+  FaRedo,
+  FaSortAmountDown,
+  FaSortAmountUp,
+  FaBuilding,
+  FaCalendarAlt,
+} from "react-icons/fa";
+import { useAuth } from "../config/AuthContext";
 
 const Employees = () => {
   const navigate = useNavigate();
+  const { permissions, user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,10 +38,14 @@ const Employees = () => {
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [usingDemoData, setUsingDemoData] = useState(false);
+  const [sorting, setSorting] = useState({
+    field: "EmployeeID",
+    direction: "asc",
+  });
 
   useEffect(() => {
     fetchEmployees();
-  }, [retryCount]);
+  }, [retryCount, user]);
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -35,54 +59,79 @@ const Employees = () => {
 
       if (!isServerConnected) {
         console.log("Server offline, using demo employee data");
-        const demoData = demoDataAPI.getEmployees();
-        setEmployees(demoData);
-        setFilteredEmployees(demoData);
-        setUsingDemoData(true);
-        setLoading(false);
+        useDemoData();
         return;
       }
 
       console.log(
         "Server is connected, attempting to fetch real data from:",
-        "http://localhost:9000/employees/mysql"
+        `${API_URL}/employees/mysql`
       );
       const config = getAuthConfig(navigate);
       if (!config) return;
 
-      const response = await axios.get(
-        "http://localhost:9000/employees/mysql",
-        config
-      );
+      // The backend will filter based on role
+      try {
+        const response = await axios.get(`${API_URL}/employees/mysql`, config);
 
-      if (response.data.Status) {
-        console.log("Successfully fetched employee data from MySQL");
-        setEmployees(response.data.Data);
-        setFilteredEmployees(response.data.Data);
-      } else {
-        throw new Error(response.data.Message || "Failed to load employees");
+        if (response.data.Status) {
+          console.log("Successfully fetched employee data from MySQL");
+          setEmployees(response.data.Data);
+          setFilteredEmployees(response.data.Data);
+        } else {
+          throw new Error(response.data.Message || "Failed to load employees");
+        }
+      } catch (err) {
+        console.log(
+          "Error loading employees from API, using demo data",
+          err.message || "Unknown error"
+        );
+        useDemoData();
       }
     } catch (err) {
-      console.error("Error loading employees:", err);
-      console.log("Using demo employee data instead");
-      const demoData = demoDataAPI.getEmployees();
-      setEmployees(demoData);
-      setFilteredEmployees(demoData);
-      setUsingDemoData(true);
-      setError("Lỗi khi tải dữ liệu: " + (err.message || "Lỗi không xác định"));
+      console.log(
+        "Error during employee fetch process",
+        err.message || "Unknown error"
+      );
+      useDemoData();
     } finally {
       setLoading(false);
     }
   };
 
+  const useDemoData = () => {
+    console.log("Using demo employee data");
+    let demoData = demoDataAPI.getEmployees();
+
+    // If employee role, filter to only show their own data
+    if (permissions.isRestricted()) {
+      demoData = demoData.filter(
+        (emp) =>
+          String(emp.EmployeeID) === String(permissions.getCurrentUserId())
+      );
+    }
+
+    setEmployees(demoData);
+    setFilteredEmployees(demoData);
+    setUsingDemoData(true);
+  };
+
   const handleRetry = () => {
+    setLoading(true);
     setRetryCount((prev) => prev + 1);
+    setTimeout(() => {
+      setLoading(false);
+    }, 1500);
   };
 
   // Search effect
   useEffect(() => {
     handleSearch();
   }, [searchTerm, searchBy, employees]);
+
+  useEffect(() => {
+    sortEmployees();
+  }, [sorting, filteredEmployees]);
 
   const handleSearch = () => {
     if (!searchTerm.trim()) {
@@ -137,6 +186,39 @@ const Employees = () => {
     setFilteredEmployees(filtered);
   };
 
+  const sortEmployees = () => {
+    const sorted = [...filteredEmployees].sort((a, b) => {
+      let aValue = a[sorting.field];
+      let bValue = b[sorting.field];
+
+      // Handle complex fields like name
+      if (sorting.field === "Name") {
+        aValue =
+          a.FullName || a.Name || `${a.FirstName || ""} ${a.LastName || ""}`;
+        bValue =
+          b.FullName || b.Name || `${b.FirstName || ""} ${b.LastName || ""}`;
+      }
+
+      if (aValue < bValue) {
+        return sorting.direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sorting.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+    setFilteredEmployees(sorted);
+  };
+
+  const handleSort = (field) => {
+    setSorting((prev) => ({
+      field,
+      direction:
+        prev.field === field && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
   const handleDelete = async (employeeId) => {
     if (!window.confirm("Are you sure you want to delete this employee?")) {
       return;
@@ -147,7 +229,7 @@ const Employees = () => {
       if (!config) return;
 
       const response = await axios.delete(
-        `http://localhost:9000/employees/delete/${employeeId}`,
+        `${API_URL}/employees/delete/${employeeId}`,
         config
       );
 
@@ -167,165 +249,443 @@ const Employees = () => {
     setSearchBy("all");
   };
 
+  // Lọc danh sách nhân viên theo phòng ban để tính số lượng
+  const getDepartmentCounts = () => {
+    const departments = {};
+    employees.forEach((emp) => {
+      const dept = emp.DepartmentName || "Other";
+      departments[dept] = (departments[dept] || 0) + 1;
+    });
+    return departments;
+  };
+
+  // Tìm phòng ban có nhiều nhân viên nhất
+  const getLargestDepartment = () => {
+    const depts = getDepartmentCounts();
+    return Object.entries(depts).reduce(
+      (a, b) => (a[1] > b[1] ? a : b),
+      ["None", 0]
+    )[0];
+  };
+
+  // Calculate average salary
+  const getAverageSalary = () => {
+    if (employees.length === 0) return 0;
+    const total = employees.reduce((sum, emp) => sum + (emp.Salary || 0), 0);
+    return total / employees.length;
+  };
+
+  // Format VND currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-US").format(amount) + " VND";
+  };
+
   return (
-    <div className="container-fluid px-4">
+    <div className="container-fluid px-4 py-3">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="mt-4">Employee Management</h1>
-        <button
-          className="btn btn-primary"
-          onClick={() => navigate("/dashboard/employees/add")}
-        >
-          Add Employee
-        </button>
+        <h2 className="mb-0">
+          <FaUsers className="text-primary me-2" />
+          Employee Management
+        </h2>
+        <div className="d-flex">
+          <button
+            className="btn btn-outline-primary me-2"
+            onClick={handleRetry}
+          >
+            <FaRedo className={loading ? "me-2 fa-spin" : "me-2"} /> Refresh
+          </button>
+          {/* Only show Add Employee button for Admin and HR Manager */}
+          {permissions.canManageEmployees() && (
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate("/dashboard/add_employee")}
+            >
+              <FaUserPlus className="me-2" /> Add Employee
+            </button>
+          )}
+        </div>
       </div>
 
       {usingDemoData && (
-        <div className="alert alert-warning" role="alert">
-          <h4 className="alert-heading">
-            <FaExclamationTriangle className="me-2" />
-            Sử dụng dữ liệu mẫu
-          </h4>
-          <p>
-            Không thể kết nối đến máy chủ dữ liệu. Đang hiển thị dữ liệu mẫu để
-            bạn có thể xem và thử nghiệm giao diện.
-          </p>
-          <hr />
-          <div className="d-flex justify-content-end">
+        <div className="alert alert-warning d-flex align-items-center mb-4">
+          <FaExclamationTriangle className="me-2" />
+          <div>
+            <strong>Cannot connect to the database server.</strong> Displaying
+            sample data so you can view and test the interface.
             <button
-              className="btn btn-primary"
+              className="btn btn-sm btn-outline-warning ms-3"
               onClick={handleRetry}
               disabled={loading}
             >
-              Thử lại kết nối
+              {loading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-1"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  Retrying...
+                </>
+              ) : (
+                "Retry"
+              )}
             </button>
           </div>
         </div>
       )}
 
-      {error && !usingDemoData && (
-        <div
-          className="alert alert-danger alert-dismissible fade show"
-          role="alert"
-        >
+      {error && (
+        <div className="alert alert-danger" role="alert">
           {error}
-          <div className="mt-2">
-            <button
-              className="btn btn-sm btn-outline-danger me-2"
-              onClick={handleRetry}
-            >
-              Retry Connection
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-close"
-              onClick={() => setError(null)}
-            ></button>
-          </div>
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center py-4">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+      {/* Employee Stats Cards */}
+      <div className="row mb-4">
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #4facfe, #00f2fe)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Total Employees</h5>
+                  <h2 className="my-2 text-white">{employees.length}</h2>
+                  <p className="mb-0 small">Currently working</p>
+                </div>
+                <div>
+                  <FaUsers
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="mt-2">Loading employees...</p>
         </div>
-      ) : (
-        <div className="card mb-4">
-          <div className="card-header">
-            <i className="fas fa-table me-1"></i>
-            Employees List
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #43e97b, #38f9d7)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Department</h5>
+                  <h2 className="my-2 text-white">
+                    {Object.keys(getDepartmentCounts()).length}
+                  </h2>
+                  <p className="mb-0 small">Number of departments</p>
+                </div>
+                <div>
+                  <FaSitemap
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="card-body">
-            <div className="d-flex justify-content-between mb-3">
-              <div className="d-flex" style={{ width: "60%" }}>
-                <select
-                  className="form-select me-2"
-                  style={{ width: "150px" }}
-                  value={searchBy}
-                  onChange={(e) => setSearchBy(e.target.value)}
-                >
-                  <option value="all">All Fields</option>
-                  <option value="id">ID</option>
-                  <option value="name">Name</option>
-                  <option value="department">Department</option>
-                  <option value="jobTitle">Job Title</option>
-                </select>
+        </div>
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #fa709a, #fee140)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Largest Department</h5>
+                  <h2 className="my-2 text-white">{getLargestDepartment()}</h2>
+                  <p className="mb-0 small">Most employees</p>
+                </div>
+                <div>
+                  <FaBuilding
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #6a11cb, #2575fc)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Average Salary</h5>
+                  <h2 className="my-2 text-white">
+                    {formatCurrency(getAverageSalary())}
+                  </h2>
+                  <p className="mb-0 small">All employees</p>
+                </div>
+                <div>
+                  <FaUserTie
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search & Filter Section */}
+      <div className="card mb-4 border-0 shadow-sm">
+        <div className="card-header bg-primary text-white">
+          <FaFilter className="me-2" /> Search & Filter Employees
+        </div>
+        <div className="card-body">
+          <div className="row">
+            <div className="col-md-8 mb-3">
+              <div className="input-group">
+                <span className="input-group-text bg-light">
+                  <FaSearch className="text-primary" />
+                </span>
                 <input
                   type="text"
-                  className="form-control me-2"
+                  className="form-control"
                   placeholder="Search employees..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                <select
+                  className="form-select flex-grow-0 w-auto"
+                  value={searchBy}
+                  onChange={(e) => setSearchBy(e.target.value)}
+                >
+                  <option value="all">All</option>
+                  <option value="id">ID</option>
+                  <option value="name">Name</option>
+                  <option value="department">Department</option>
+                  <option value="jobTitle">Position</option>
+                </select>
                 <button
                   className="btn btn-outline-secondary"
+                  type="button"
                   onClick={clearSearch}
-                  disabled={!searchTerm}
                 >
                   Clear
                 </button>
               </div>
             </div>
+            <div className="col-md-4 mb-3">
+              <div className="d-flex justify-content-end">
+                <div className="btn-group" role="group">
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() => handleSort("EmployeeID")}
+                  >
+                    <FaSortAmountDown className="me-1" /> ID
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() => handleSort("Name")}
+                  >
+                    <FaSortAmountUp className="me-1" /> Name
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() => handleSort("DepartmentName")}
+                  >
+                    <FaSortAmountDown className="me-1" /> Department
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Employee List */}
+      <div className="card border-0 shadow-sm">
+        <div className="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 className="mb-0 text-primary">
+            <FaUsers className="me-2" />
+            Employee List
+          </h5>
+          <span className="badge bg-info text-white">
+            {filteredEmployees.length} employees
+          </span>
+        </div>
+        <div className="card-body">
+          {loading ? (
+            <div className="text-center my-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <p className="mt-2">Loading employee data...</p>
+            </div>
+          ) : filteredEmployees.length > 0 ? (
             <div className="table-responsive">
-              <table className="table table-bordered">
-                <thead>
+              <table className="table table-hover align-middle">
+                <thead className="table-light">
                   <tr>
-                    <th>Employee ID</th>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Department</th>
-                    <th>Position</th>
-                    <th>Actions</th>
+                    <th
+                      scope="col"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleSort("EmployeeID")}
+                    >
+                      ID{" "}
+                      {sorting.field === "EmployeeID" &&
+                        (sorting.direction === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th
+                      scope="col"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleSort("Name")}
+                    >
+                      Employee{" "}
+                      {sorting.field === "Name" &&
+                        (sorting.direction === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th
+                      scope="col"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleSort("DepartmentName")}
+                    >
+                      Department{" "}
+                      {sorting.field === "DepartmentName" &&
+                        (sorting.direction === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th
+                      scope="col"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleSort("PositionName")}
+                    >
+                      Position{" "}
+                      {sorting.field === "PositionName" &&
+                        (sorting.direction === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th
+                      scope="col"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleSort("HireDate")}
+                    >
+                      Hire Date{" "}
+                      {sorting.field === "HireDate" &&
+                        (sorting.direction === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.map((emp) => (
-                    <tr key={emp.EmployeeID}>
-                      <td>{emp.EmployeeID}</td>
-                      <td>{`${emp.FirstName} ${emp.LastName}`}</td>
-                      <td>{emp.Email}</td>
-                      <td>{emp.Phone}</td>
-                      <td>{emp.DepartmentName}</td>
-                      <td>{emp.PositionName}</td>
+                  {filteredEmployees.map((employee) => (
+                    <tr key={employee.EmployeeID || employee.id}>
+                      <td>{employee.EmployeeID || employee.id}</td>
                       <td>
-                        <button
-                          className="btn btn-info btn-sm me-2"
-                          onClick={() =>
-                            navigate(
-                              `/dashboard/employees/view/${emp.EmployeeID}`
-                            )
-                          }
-                        >
-                          View
-                        </button>
-                        <button
-                          className="btn btn-warning btn-sm me-2"
-                          onClick={() =>
-                            navigate(
-                              `/dashboard/employees/edit/${emp.EmployeeID}`
-                            )
-                          }
-                        >
-                          Update
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDelete(emp.EmployeeID)}
-                        >
-                          Delete
-                        </button>
+                        <div className="d-flex align-items-center">
+                          <div className="bg-light rounded-circle p-2 me-3">
+                            <FaUserTie className="text-primary" />
+                          </div>
+                          <div>
+                            <div className="fw-bold">
+                              {employee.FullName ||
+                                employee.Name ||
+                                `${employee.FirstName || ""} ${
+                                  employee.LastName || ""
+                                }`}
+                            </div>
+                            <div className="small text-muted">
+                              {employee.Email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <FaBuilding className="text-secondary me-2" />
+                          {employee.DepartmentName || "N/A"}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <FaUserCog className="text-secondary me-2" />
+                          {employee.PositionName || employee.JobTitle || "N/A"}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <FaCalendarAlt className="text-secondary me-2" />
+                          {employee.HireDate || "N/A"}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="btn-group" role="group">
+                          <Link
+                            to={`/dashboard/view_employee/${
+                              employee.EmployeeID || employee.id
+                            }`}
+                            className="btn btn-sm btn-info text-white me-1"
+                            title="View Details"
+                          >
+                            <FaEye />
+                          </Link>
+                          {permissions.canManageEmployees() && (
+                            <>
+                              <Link
+                                to={`/dashboard/edit_employee/${
+                                  employee.EmployeeID || employee.id
+                                }`}
+                                className="btn btn-sm btn-primary me-1"
+                                title="Edit"
+                              >
+                                <FaEdit />
+                              </Link>
+                              <button
+                                className="btn btn-sm btn-danger"
+                                title="Delete"
+                                onClick={() =>
+                                  handleDelete(
+                                    employee.EmployeeID || employee.id
+                                  )
+                                }
+                              >
+                                <FaTrash />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-4">
+              <FaExclamationTriangle
+                className="text-warning mb-3"
+                style={{ fontSize: "3rem" }}
+              />
+              <h5>No employees found</h5>
+              <p className="text-muted">
+                No employees match your search criteria.
+              </p>
+              <button className="btn btn-outline-primary" onClick={clearSearch}>
+                Clear Search
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

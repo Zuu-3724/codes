@@ -1,11 +1,18 @@
 import os
-import requests
-import mysql.connector
 import logging
+import requests
+import json
+import mysql.connector
+import time
+# Comment out dotenv import
+# from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("debug_auth")
+
+# Comment out this line
+# load_dotenv()
 
 def check_mysql_connection():
     """Check MySQL connection"""

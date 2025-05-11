@@ -4,13 +4,13 @@ from mysql.connector import Error as MySQLError, pooling
 import pyodbc
 import logging
 from typing import Dict, Any, Optional
-from dotenv import load_dotenv
+# from dotenv import load_dotenv # Comment out this line
 from fastapi import HTTPException
 import time
 from functools import wraps
 
 # Load environment variables
-load_dotenv()
+# load_dotenv() # Comment out this line
 
 # Configure logging
 logging.basicConfig(
@@ -29,10 +29,17 @@ MYSQL_CONFIG = {
     'pool_size': 10
 }
 
+# Set this to True to force using demo data
+FORCE_DEMO_DATA = os.getenv('FORCE_DEMO_DATA', 'false').lower() == 'true'
+
 # Initialize MySQL connection pool
 try:
-    mysql_pool = pooling.MySQLConnectionPool(**MYSQL_CONFIG)
-    logger.info("MySQL Connection Pool created successfully")
+    if FORCE_DEMO_DATA:
+        logger.warning("FORCE_DEMO_DATA is set to True. Using demo data for MySQL.")
+        mysql_pool = None
+    else:
+        mysql_pool = pooling.MySQLConnectionPool(**MYSQL_CONFIG)
+        logger.info("MySQL Connection Pool created successfully")
 except Exception as e:
     logger.error(f"Error creating MySQL connection pool: {str(e)}")
     mysql_pool = None  # Allow application to continue even if MySQL fails
@@ -49,17 +56,20 @@ SQL_SERVER_CONFIG = {
 # Initialize SQL Server connection pool
 sqlserver_pool = None
 try:
-    # Check available SQL Server drivers
-    drivers = [x for x in pyodbc.drivers() if x.endswith(' for SQL Server')]
-    if drivers:
-        logger.info(f"Found SQL Server driver: {drivers[0]}")
-        SQL_SERVER_CONFIG['driver'] = drivers[0]
-        
-        # Use direct connection instead of pooling since there's an issue with ConnectionPool
-        logger.info("Skipping SQL Server connection pool due to compatibility issues.")
-        logger.info("Will create connections directly when needed.")
+    if FORCE_DEMO_DATA:
+        logger.warning("FORCE_DEMO_DATA is set to True. Using demo data for SQL Server.")
     else:
-        logger.warning("No SQL Server driver found")
+        # Check available SQL Server drivers
+        drivers = [x for x in pyodbc.drivers() if x.endswith(' for SQL Server')]
+        if drivers:
+            logger.info(f"Found SQL Server driver: {drivers[0]}")
+            SQL_SERVER_CONFIG['driver'] = drivers[0]
+            
+            # Use direct connection instead of pooling since there's an issue with ConnectionPool
+            logger.info("Skipping SQL Server connection pool due to compatibility issues.")
+            logger.info("Will create connections directly when needed.")
+        else:
+            logger.warning("No SQL Server driver found")
 except Exception as e:
     logger.error(f"Error initializing SQL Server: {str(e)}")
 
@@ -83,6 +93,10 @@ def retry_on_error(max_retries=3, delay=1):
 @retry_on_error()
 async def execute_mysql_query(query: str, params=None):
     """Execute a MySQL query with retry logic"""
+    if mysql_pool is None:
+        logger.warning("MySQL connection not available. Returning mock data.")
+        return []  # Return empty list for mock data
+        
     try:
         connection = mysql_pool.get_connection()
         cursor = connection.cursor(dictionary=True)
@@ -105,6 +119,10 @@ async def execute_mysql_query(query: str, params=None):
 @retry_on_error()
 async def execute_sqlserver_query(query: str, params=None):
     """Execute a SQL Server query with retry logic"""
+    if FORCE_DEMO_DATA:
+        logger.warning("SQL Server connection not available. Returning mock data.")
+        return []  # Return empty list for mock data
+        
     try:
         # Create a direct connection instead of using pool
         connection_string = f"DRIVER={SQL_SERVER_CONFIG['driver']};SERVER={SQL_SERVER_CONFIG['server']};DATABASE={SQL_SERVER_CONFIG['database']};UID={SQL_SERVER_CONFIG['uid']};PWD={SQL_SERVER_CONFIG['pwd']};TrustServerCertificate=yes"
@@ -134,7 +152,19 @@ async def execute_sqlserver_query(query: str, params=None):
 # Health check functions - non-async version for direct calls
 def check_mysql_health():
     """Check MySQL connection health"""
+    if FORCE_DEMO_DATA:
+        return {
+            "status": "demo",
+            "version": "Demo Mode"
+        }
+        
     try:
+        if mysql_pool is None:
+            return {
+                "status": "unhealthy",
+                "error": "MySQL connection pool not initialized"
+            }
+            
         connection = mysql_pool.get_connection()
         cursor = connection.cursor()
         cursor.execute("SELECT VERSION()")
@@ -154,6 +184,12 @@ def check_mysql_health():
 
 def check_sqlserver_health():
     """Check SQL Server connection health"""
+    if FORCE_DEMO_DATA:
+        return {
+            "status": "demo",
+            "version": "Demo Mode"
+        }
+        
     try:
         # Create a direct connection instead of using pool
         connection_string = f"DRIVER={SQL_SERVER_CONFIG['driver']};SERVER={SQL_SERVER_CONFIG['server']};DATABASE={SQL_SERVER_CONFIG['database']};UID={SQL_SERVER_CONFIG['uid']};PWD={SQL_SERVER_CONFIG['pwd']};TrustServerCertificate=yes"

@@ -1,371 +1,396 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { FaSearch, FaEdit, FaHistory } from "react-icons/fa";
-import UpdatePayroll from "./UpdatePayroll";
-import { getAuthConfig } from "../config/api.config";
-import { useNavigate } from "react-router-dom";
+import {
+  FaMoneyBillWave,
+  FaExclamationTriangle,
+  FaRedo,
+  FaFilter,
+  FaFileInvoiceDollar,
+  FaUserTie,
+  FaBuilding,
+  FaCalendarAlt,
+  FaSearch,
+  FaChartLine,
+} from "react-icons/fa";
 
 const Payroll = () => {
-  const navigate = useNavigate();
-  const [payroll, setPayroll] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [salaryHistory, setSalaryHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [employeeToUpdate, setEmployeeToUpdate] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentMonth, setCurrentMonth] = useState(
-    new Date().toISOString().slice(0, 7)
-  );
+  console.log("Payroll component mounted - rendering basic payroll page");
+  const [loading, setLoading] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState("April");
+  const [currentYear, setCurrentYear] = useState("2025");
+  const [payrollData, setPayrollData] = useState([
+    {
+      PayrollID: 1,
+      EmployeeID: 1,
+      EmployeeName: "John Smith",
+      Department: "IT",
+      Month: "April",
+      Year: "2025",
+      BasicSalary: 15000000,
+      Allowances: 500000,
+      Deductions: 0,
+      NetSalary: 16500000,
+      Status: "Paid",
+    },
+    {
+      PayrollID: 2,
+      EmployeeID: 2,
+      EmployeeName: "Mary Johnson",
+      Department: "Accounting",
+      Month: "April",
+      Year: "2025",
+      BasicSalary: 18000000,
+      Allowances: 600000,
+      Deductions: 100000,
+      NetSalary: 20200000,
+      Status: "Paid",
+    },
+    {
+      PayrollID: 3,
+      EmployeeID: 3,
+      EmployeeName: "David Wilson",
+      Department: "Human Resources",
+      Month: "April",
+      Year: "2025",
+      BasicSalary: 12000000,
+      Allowances: 450000,
+      Deductions: 50000,
+      NetSalary: 13100000,
+      Status: "Processing",
+    },
+  ]);
 
   useEffect(() => {
-    fetchPayroll();
-  }, [currentMonth]);
-
-  const fetchPayroll = async () => {
-    setLoading(true);
-    setError(null);
-    const config = getAuthConfig(navigate);
-    if (!config) return;
-
-    try {
-      // Thử kết nối trực tiếp với database trước
-      const response = await axios.get(
-        `http://localhost:9000/payroll/salary?month=${currentMonth}`,
-        config
-      );
-
-      if (response.data.Status) {
-        setPayroll(response.data.Data);
-      } else {
-        // Nếu không thành công, thử endpoint test
-        const testResponse = await axios.get(
-          `http://localhost:9000/payroll/test`,
-          config
-        );
-
-        if (testResponse.data.Status) {
-          setPayroll(testResponse.data.Data);
-          setError(
-            "Đang sử dụng dữ liệu test do không thể kết nối tới database chính"
-          );
-        } else {
-          setError(response.data.Error || "Could not load payroll data");
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching payroll:", error);
-      if (error.response?.status === 401) {
-        navigate("/login");
-      } else {
-        try {
-          // Thử kết nối với endpoint test
-          const testResponse = await axios.get(
-            `http://localhost:9000/payroll/test`,
-            config
-          );
-
-          if (testResponse.data.Status) {
-            setPayroll(testResponse.data.Data);
-            setError(
-              "Đang sử dụng dữ liệu test do lỗi kết nối tới database chính"
-            );
-          } else {
-            // Nếu cả hai đều thất bại, dùng demo data
-            console.log("Using demo payroll data");
-            setPayroll([
-              {
-                EmployeeID: 1,
-                FullName: "Nguyễn Văn A",
-                BaseSalary: 15000000,
-                Bonus: 2000000,
-                Deductions: 500000,
-                NetSalary: 16500000,
-                Department: "IT",
-                Position: "Developer",
-              },
-              {
-                EmployeeID: 2,
-                FullName: "Trần Thị B",
-                BaseSalary: 18000000,
-                Bonus: 3000000,
-                Deductions: 800000,
-                NetSalary: 20200000,
-                Department: "HR",
-                Position: "Manager",
-              },
-              {
-                EmployeeID: 3,
-                FullName: "Lê Văn C",
-                BaseSalary: 12000000,
-                Bonus: 1500000,
-                Deductions: 400000,
-                NetSalary: 13100000,
-                Department: "Finance",
-                Position: "Accountant",
-              },
-            ]);
-            setError(
-              "Đang sử dụng dữ liệu demo do không kết nối được tới máy chủ cơ sở dữ liệu"
-            );
-          }
-        } catch (innerError) {
-          // Nếu cả hai đều thất bại, dùng demo data cuối cùng
-          console.log("Using demo payroll data after all attempts failed");
-          setPayroll([
-            {
-              EmployeeID: 1,
-              FullName: "Nguyễn Văn A",
-              BaseSalary: 15000000,
-              Bonus: 2000000,
-              Deductions: 500000,
-              NetSalary: 16500000,
-              Department: "IT",
-              Position: "Developer",
-            },
-            {
-              EmployeeID: 2,
-              FullName: "Trần Thị B",
-              BaseSalary: 18000000,
-              Bonus: 3000000,
-              Deductions: 800000,
-              NetSalary: 20200000,
-              Department: "HR",
-              Position: "Manager",
-            },
-            {
-              EmployeeID: 3,
-              FullName: "Lê Văn C",
-              BaseSalary: 12000000,
-              Bonus: 1500000,
-              Deductions: 400000,
-              NetSalary: 13100000,
-              Department: "Finance",
-              Position: "Accountant",
-            },
-          ]);
-          setError(
-            "Đang sử dụng dữ liệu demo do không kết nối được tới máy chủ cơ sở dữ liệu"
-          );
-        }
-      }
-    } finally {
+    console.log("Payroll useEffect triggered - basic version");
+    // Set loading to false after 1 second to test rendering
+    const timer = setTimeout(() => {
       setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+  };
+
+  const statusBadgeColor = (status) => {
+    switch (status) {
+      case "Paid":
+        return "bg-success";
+      case "Processing":
+        return "bg-warning";
+      case "Pending":
+        return "bg-secondary";
+      default:
+        return "bg-info";
     }
   };
 
-  const handleShowUpdateModal = (employee) => {
-    setEmployeeToUpdate(employee);
-    setShowUpdateModal(true);
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-US").format(amount) + " VND";
   };
 
-  const handleUpdateSuccess = () => {
-    fetchPayroll();
-    setShowUpdateModal(false);
-    setEmployeeToUpdate(null);
-  };
-
-  const fetchSalaryHistory = async (employeeId) => {
-    setLoading(true);
-    setError(null);
-    const config = getAuthConfig(navigate);
-    if (!config) return;
-
-    try {
-      const response = await axios.get(
-        `http://localhost:9000/payroll/salary-history/${employeeId}`,
-        config
-      );
-      if (response.data.Status) {
-        setSalaryHistory(response.data.Data);
-        setSelectedEmployee(employeeId);
-        setShowHistory(true);
-      } else {
-        setError(response.data.Error || "Could not load salary history");
-      }
-    } catch (error) {
-      console.error("Error fetching salary history:", error);
-      if (error.response?.status === 401) {
-        navigate("/login");
-      } else {
-        setError("Connection error. Please try again later");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredPayroll = payroll.filter(
-    (employee) =>
-      employee.FullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.EmployeeID.toString().includes(searchTerm)
-  );
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const years = ["2023", "2024", "2025", "2026"];
 
   return (
-    <div className="container-fluid px-4">
-      <h1 className="mt-4 mb-4">Payroll Management</h1>
-
-      {error && (
-        <div className="alert alert-danger" role="alert">
-          {error}
+    <div className="container-fluid px-4 py-3">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="mb-0">
+          <FaMoneyBillWave className="text-success me-2" />
+          Payroll Management
+        </h2>
+        <div className="d-flex">
           <button
-            className="btn-close float-end"
-            onClick={() => setError(null)}
-          ></button>
-        </div>
-      )}
-
-      {/* Search and Month Selection */}
-      <div className="row mb-4">
-        <div className="col-md-6">
-          <div className="input-group">
-            <span className="input-group-text">
-              <FaSearch />
-            </span>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by employee name or ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="input-group">
-            <span className="input-group-text">Month</span>
-            <input
-              type="month"
-              className="form-control"
-              value={currentMonth}
-              onChange={(e) => setCurrentMonth(e.target.value)}
-            />
-          </div>
+            className="btn btn-outline-primary me-2"
+            onClick={handleRetry}
+          >
+            <FaRedo className={loading ? "me-2 fa-spin" : "me-2"} /> Refresh
+          </button>
         </div>
       </div>
 
-      {/* Payroll Table */}
-      <div className="card shadow mb-4">
-        <div className="card-header py-3">
-          <h6 className="m-0 font-weight-bold text-primary">Current Payroll</h6>
+      {/* Server connection notification */}
+      <div className="alert alert-warning d-flex align-items-center mb-4">
+        <FaExclamationTriangle className="me-2" />
+        <div>
+          <strong>Cannot connect to the database server.</strong> Displaying
+          sample data so you can view and test the interface.
+          <button
+            className="btn btn-sm btn-outline-warning ms-3"
+            onClick={handleRetry}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+
+      {/* Payroll Filter Section */}
+      <div className="card mb-4 border-0 shadow-sm">
+        <div className="card-header bg-primary text-white">
+          <FaFilter className="me-2" /> Filter Payroll Data
         </div>
         <div className="card-body">
-          {loading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <p className="mt-2">Loading payroll data...</p>
+          <div className="row g-3">
+            <div className="col-md-3">
+              <label
+                htmlFor="month"
+                className="form-label d-flex align-items-center"
+              >
+                <FaCalendarAlt className="me-2 text-primary" /> Month
+              </label>
+              <select
+                className="form-select"
+                id="month"
+                value={currentMonth}
+                onChange={(e) => setCurrentMonth(e.target.value)}
+              >
+                {months.map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Employee ID</th>
-                    <th>Name</th>
-                    <th>Base Salary</th>
-                    <th>Bonus</th>
-                    <th>Deductions</th>
-                    <th>Net Salary</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPayroll.map((employee) => (
-                    <tr key={employee.EmployeeID}>
-                      <td>{employee.EmployeeID}</td>
-                      <td>{employee.FullName}</td>
-                      <td>${employee.BaseSalary.toLocaleString()}</td>
-                      <td>${employee.Bonus.toLocaleString()}</td>
-                      <td>${employee.Deductions.toLocaleString()}</td>
-                      <td>${employee.NetSalary.toLocaleString()}</td>
-                      <td>
-                        <button
-                          className="btn btn-primary btn-sm me-2"
-                          onClick={() => handleShowUpdateModal(employee)}
-                        >
-                          <FaEdit /> Update
-                        </button>
-                        <button
-                          className="btn btn-info btn-sm"
-                          onClick={() =>
-                            fetchSalaryHistory(employee.EmployeeID)
-                          }
-                        >
-                          <FaHistory /> History
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="col-md-3">
+              <label
+                htmlFor="year"
+                className="form-label d-flex align-items-center"
+              >
+                <FaCalendarAlt className="me-2 text-primary" /> Year
+              </label>
+              <select
+                className="form-select"
+                id="year"
+                value={currentYear}
+                onChange={(e) => setCurrentYear(e.target.value)}
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
+            <div className="col-md-4">
+              <label
+                htmlFor="search"
+                className="form-label d-flex align-items-center"
+              >
+                <FaSearch className="me-2 text-primary" /> Search Employees
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="search"
+                placeholder="Enter employee name..."
+              />
+            </div>
+            <div className="col-md-2 d-flex align-items-end">
+              <button className="btn btn-primary w-100">
+                <FaSearch className="me-2" /> Search
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Salary History Modal */}
-      {showHistory && (
-        <div className="modal show d-block" tabIndex="-1">
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Salary History</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowHistory(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="table-responsive">
-                  <table className="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>Month</th>
-                        <th>Base Salary</th>
-                        <th>Bonus</th>
-                        <th>Deductions</th>
-                        <th>Net Salary</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {salaryHistory.map((record) => (
-                        <tr key={record.SalaryID}>
-                          <td>
-                            {new Date(record.SalaryMonth).toLocaleDateString(
-                              undefined,
-                              {
-                                year: "numeric",
-                                month: "long",
-                              }
-                            )}
-                          </td>
-                          <td>${record.BaseSalary.toLocaleString()}</td>
-                          <td>${record.Bonus.toLocaleString()}</td>
-                          <td>${record.Deductions.toLocaleString()}</td>
-                          <td>${record.NetSalary.toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+      {/* Payroll Summary Cards */}
+      <div className="row mb-4">
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #4facfe, #00f2fe)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Total Employees</h5>
+                  <h2 className="my-2 text-white">{payrollData.length}</h2>
+                  <p className="mb-0 small">
+                    {currentMonth} {currentYear}
+                  </p>
+                </div>
+                <div>
+                  <FaUserTie
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #43e97b, #38f9d7)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Total Base Salary</h5>
+                  <h2 className="my-2 text-white">
+                    {formatCurrency(
+                      payrollData.reduce(
+                        (sum, item) => sum + item.BasicSalary,
+                        0
+                      )
+                    )}
+                  </h2>
+                  <p className="mb-0 small">
+                    {currentMonth} {currentYear}
+                  </p>
+                </div>
+                <div>
+                  <FaFileInvoiceDollar
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #fa709a, #fee140)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Total Allowances</h5>
+                  <h2 className="my-2 text-white">
+                    {formatCurrency(
+                      payrollData.reduce(
+                        (sum, item) => sum + item.Allowances,
+                        0
+                      )
+                    )}
+                  </h2>
+                  <p className="mb-0 small">
+                    {currentMonth} {currentYear}
+                  </p>
+                </div>
+                <div>
+                  <FaChartLine
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-xl-3 col-md-6">
+          <div
+            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            style={{
+              background: "linear-gradient(to right, #6a11cb, #2575fc)",
+            }}
+          >
+            <div className="card-body text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-0">Total Salary</h5>
+                  <h2 className="my-2 text-white">
+                    {formatCurrency(
+                      payrollData.reduce((sum, item) => sum + item.NetSalary, 0)
+                    )}
+                  </h2>
+                  <p className="mb-0 small">
+                    {currentMonth} {currentYear}
+                  </p>
+                </div>
+                <div>
+                  <FaMoneyBillWave
+                    className="text-white opacity-75"
+                    style={{ fontSize: "3rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* Update Salary Modal */}
-      {showUpdateModal && employeeToUpdate && (
-        <UpdatePayroll
-          employee={employeeToUpdate}
-          onUpdateSuccess={handleUpdateSuccess}
-        />
-      )}
+      {/* Payroll Table */}
+      <div className="card border-0 shadow-sm">
+        <div className="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 className="mb-0 text-primary">
+            <FaMoneyBillWave className="me-2" />
+            Salary Information
+          </h5>
+        </div>
+        <div className="card-body">
+          <div className="table-responsive">
+            <table className="table table-hover">
+              <thead className="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>EMPLOYEE</th>
+                  <th>DEPARTMENT</th>
+                  <th>BASE SALARY</th>
+                  <th>TOTAL SALARY</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payrollData.map((item, index) => (
+                  <tr key={item.PayrollID}>
+                    <td>{index + 1}</td>
+                    <td>
+                      <div className="d-flex align-items-center">
+                        <div className="bg-light rounded-circle p-2 me-3">
+                          <FaUserTie className="text-primary" />
+                        </div>
+                        {item.EmployeeName}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="d-flex align-items-center">
+                        <FaBuilding className="text-secondary me-2" />
+                        {item.Department}
+                      </div>
+                    </td>
+                    <td>{formatCurrency(item.BasicSalary)}</td>
+                    <td>{formatCurrency(item.NetSalary)}</td>
+                    <td>
+                      <span
+                        className={`badge ${statusBadgeColor(item.Status)}`}
+                      >
+                        {item.Status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

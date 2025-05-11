@@ -1,16 +1,568 @@
 .loginPage {
-    background: url('images/banner.png');
-    background: linear-gradient(rgba(11, 11, 11, 0.5), rgba(10, 10, 10, 0.5)), url("images/banner.png");
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 120%;
+    background: linear-gradient(45deg, #1e3c72 0%, #2a5298 100%);
 }
 
 .loginForm {
     background-color: rgba(1, 32, 93, 0.6);
     color: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 ul li :hover {
     background-color: gray;
+}
+
+/* Enhanced dashboard styling */
+
+/* Make main container have proper height */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Main container setup */
+.container-fluid {
+  min-height: 100vh;
+}
+
+/* Dashboard container specific styling */
+.dashboard-container {
+  overflow-x: hidden;
+}
+
+/* Main content area styling */
+.content-area {
+  min-height: 100vh;
+  margin-left: 0;
+}
+
+/* Sidebar container */
+.sidebar-container {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  height: 100vh;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure main content has proper spacing */
+@media (min-width: 768px) {
+  .content-area {
+    margin-left: 25%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .content-area {
+    margin-left: 16.66666667%;
+  }
+}
+
+/* Scrollable sidebar content */
+.sidebar-container .h-100 {
+  overflow-y: auto;
+  height: 100%;
+}
+
+/* Hide scrollbar while allowing scrolling */
+.sidebar-container .h-100::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Sidebar styling */
+.bg-dark {
+  background-color: #1e2a3a !important;
+}
+
+.nav-link {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  margin: 2px 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.nav-item {
+  margin-bottom: 2px;
+}
+
+.nav-pills .nav-link {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(3px);
+}
+
+.nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-left: 3px solid #0d6efd;
+}
+
+/* Make sidebar menu more compact */
+#menu {
+  margin-top: 5px;
+}
+
+/* Remove extra space in user dropdown */
+.dropdown {
+  margin-top: 5px;
+}
+
+/* Card styling */
+.card {
+  transition: all 0.3s ease;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  border-bottom: none;
+  font-weight: 600;
+}
+
+/* Statistics cards */
+.display-4 {
+  font-weight: 600;
+}
+
+.icon-bg svg {
+  transition: all 0.3s ease;
+}
+
+.card:hover .icon-bg svg {
+  transform: scale(1.1);
+}
+
+/* Animation for refresh button */
+.rotate-animation {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Table styling */
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.progress {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Badge styling */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Button enhancements */
+.btn {
+  font-weight: 500;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Alert styling */
+.alert {
+  border-radius: 10px;
+  border: none;
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border: none;
+  padding: 8px;
+}
+
+.dropdown-item {
+  border-radius: 5px;
+  padding: 8px 15px;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Avatar styling */
+.avatar-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Login page styling */
+.loginPage {
+  background: url('/images/banner.png');
+  background: linear-gradient(rgba(11, 11, 11, 0.5), rgba(10, 10, 10, 0.5)), url("/images/banner.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 120%;
+}
+
+.loginForm {
+  background-color: rgba(1, 32, 93, 0.6);
+  color: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Input group styling */
+.input-group-text {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Mobile sidebar adjustments */
+@media (max-width: 767.98px) {
+  .sidebar-container {
+    width: auto;
+    max-width: 75px;
+  }
+  
+  .content-area {
+    margin-left: 75px;
+  }
+}
+
+/* Active nav item styling */
+.nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-left: 3px solid #0d6efd;
+  color: white !important;
+}
+
+/* Improve sidebar menu item display */
+.nav-item {
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.nav-item .nav-link {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dashboard Global Styles */
+:root {
+  --primary-gradient: linear-gradient(to right, #4facfe, #00f2fe);
+  --success-gradient: linear-gradient(to right, #43e97b, #38f9d7);
+  --warning-gradient: linear-gradient(to right, #fa709a, #fee140);
+  --danger-gradient: linear-gradient(to right, #ff512f, #dd2476);
+  --purple-gradient: linear-gradient(to right, #6a11cb, #2575fc);
+  --card-border-radius: 0.5rem;
+  --transition-speed: 0.3s;
+}
+
+/* Consistent card styling */
+.dashboard-card {
+  border-radius: var(--card-border-radius);
+  border: none;
+  overflow: hidden;
+  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Tables */
+.table-hover tbody tr {
+  transition: background-color var(--transition-speed);
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Nav pills with gradient hover */
+.nav-pills .nav-link {
+  border-radius: 50rem;
+  padding: 0.5rem 1.25rem;
+  transition: all var(--transition-speed);
+}
+
+.nav-pills .nav-link:not(.active):hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.nav-pills .nav-link.active {
+  background: var(--primary-gradient);
+  box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Button enhancements */
+.btn {
+  border-radius: 50rem;
+  padding: 0.5rem 1.25rem;
+  transition: all var(--transition-speed);
+}
+
+.btn-primary {
+  background: var(--primary-gradient);
+  border: none;
+}
+
+.btn-success {
+  background: var(--success-gradient);
+  border: none;
+}
+
+.btn-warning {
+  background: var(--warning-gradient);
+  border: none;
+}
+
+.btn-danger {
+  background: var(--danger-gradient);
+  border: none;
+}
+
+/* Progress bars */
+.progress {
+  height: 20px;
+  border-radius: 50rem;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+
+.progress-bar {
+  transition: width 1s ease;
+  background: var(--primary-gradient);
+}
+
+.progress-bar.bg-success {
+  background: var(--success-gradient);
+}
+
+.progress-bar.bg-warning {
+  background: var(--warning-gradient);
+}
+
+.progress-bar.bg-danger {
+  background: var(--danger-gradient);
+}
+
+/* Page header */
+.page-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Badge styling */
+.badge {
+  padding: 0.5em 0.75em;
+  border-radius: 50rem;
+  font-weight: 500;
+}
+
+/* Improve layout for charts */
+.chart-container {
+  width: 100%;
+  padding: 1rem;
+}
+
+.month-label {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card hover effects */
+.card {
+  transition: all var(--transition-speed);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+/* Custom styling for forms */
+.form-control, .form-select {
+  border-radius: 50rem;
+  padding: 0.5rem 1rem;
+  border-color: #e0e0e0;
+  transition: all 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+}
+
+/* Input groups */
+.input-group-text {
+  border-radius: 50rem 0 0 50rem;
+  background-color: #f8f9fa;
+}
+
+.input-group .form-control {
+  border-radius: 0 50rem 50rem 0;
+}
+
+/* Alert styling */
+.alert {
+  border-radius: var(--card-border-radius);
+  border: none;
+}
+
+.alert-dismissible .btn-close {
+  padding: 0.75rem 1rem;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 50rem;
+}
+
+.status-badge i, 
+.status-badge svg {
+  margin-right: 0.25rem;
+}
+
+/* For Attendance and Reports components */
+.progress-stacked {
+  margin-top: 1.5rem;
+}
+
+.progress-month {
+  margin-bottom: 1rem;
+}
+
+/* Spinner Animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner-border {
+  animation: spin 1s linear infinite;
+}
+
+/* Card header styling */
+.card-header {
+  padding: 1rem;
+  font-weight: 600;
+}
+
+/* Dark mode support classes (can be toggled with JavaScript) */
+.dark-mode {
+  background-color: #121212;
+  color: #f8f9fa;
+}
+
+.dark-mode .card {
+  background-color: #1e1e1e;
+  color: #f8f9fa;
+}
+
+.dark-mode .table {
+  color: #f8f9fa;
+}
+
+.dark-mode .table-light {
+  background-color: #2c2c2c;
+  color: #f8f9fa;
+}
+
+.dark-mode .form-control,
+.dark-mode .form-select {
+  background-color: #2c2c2c;
+  color: #f8f9fa;
+  border-color: #444;
 }

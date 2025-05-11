@@ -7,9 +7,21 @@ import os
 import bcrypt
 import random
 from datetime import datetime, timedelta
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("populate_data")
 
 # Add parent directory to path to run this script directly
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Set environment variables directly
+os.environ["FORCE_DEMO_DATA"] = "false"
+os.environ["MYSQL_HOST"] = "localhost"
+os.environ["MYSQL_USER"] = "root"
+os.environ["MYSQL_PASSWORD"] = "YES"
+os.environ["MYSQL_DATABASE"] = "payroll"
 
 from utils.db import execute_mysql_query
 

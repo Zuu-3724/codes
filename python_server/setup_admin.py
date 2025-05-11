@@ -2,10 +2,8 @@ import mysql.connector
 import bcrypt
 import logging
 import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+# Commented out dotenv loading
+# from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,12 +12,12 @@ logger = logging.getLogger("setup_admin")
 def setup_admin_user():
     """Set up admin user and ensure tables exist with proper naming"""
     try:
-        # Connect to MySQL server
+        # Connect to MySQL server with hardcoded values
         connection = mysql.connector.connect(
-            host=os.getenv('MYSQL_HOST', 'localhost'),
-            user=os.getenv('MYSQL_USER', 'root'),
-            password=os.getenv('MYSQL_PASSWORD', 'YES'),
-            database=os.getenv('MYSQL_DATABASE', 'payroll')
+            host='localhost',
+            user='root',
+            password='YES',
+            database='payroll'
         )
         cursor = connection.cursor()
         
@@ -84,4 +82,6 @@ def setup_admin_user():
             connection.close()
 
 if __name__ == "__main__":
+    # Commented out dotenv loading
+    # load_dotenv()
     setup_admin_user() 

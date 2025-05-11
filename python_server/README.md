@@ -165,3 +165,135 @@ The Python FastAPI implementation offers several advantages:
 ## License
 
 [MIT License](LICENSE)
+
+## Role-Based Authorization System
+
+The system implements role-based access control (RBAC) with the following roles and permissions:
+
+### Roles and Permissions
+
+1. **Admin**
+
+   - Has full access to all system features and APIs
+   - Can manage all users, roles, and permissions
+   - Can view and modify all HR and payroll data
+
+2. **HR Manager**
+
+   - Can manage employee data from HUMAN_2025 database
+   - Can add, update, and view employee information
+   - Can manage departments and positions
+   - Cannot modify payroll data (view-only access)
+
+3. **Payroll Manager**
+
+   - Can manage payroll data from PAYROLL database
+   - Can update salaries, add allowances and deductions
+   - Can view employee information (read-only)
+   - Cannot modify employee data
+
+4. **Employee**
+   - Can only view their own personal information
+   - Can view their own salary and payment history
+   - Cannot access data of other employees
+
+### API Access Protection
+
+The API endpoints are protected by middleware that enforces the following rules:
+
+1. **Employee Data Access**
+
+   - Admin & HR Manager: Full access
+   - Payroll Manager: View-only access
+   - Employee: Access only to their own data
+
+2. **Payroll Data Access**
+   - Admin & Payroll Manager: Full access
+   - HR Manager: View-only access
+   - Employee: Access only to their own salary data
+
+### Implementation
+
+The authorization system is implemented through custom middleware:
+
+- `middleware/auth.py`: Core authentication middleware
+- `middleware/api_auth.py`: Role-based API access control
+
+Each API endpoint is protected using dependency injection with the appropriate middleware function:
+
+```python
+# For employee data endpoints
+@router.get("/example", dependencies=[Depends(protect_employee_endpoint())])
+
+# For payroll data endpoints
+@router.get("/example", dependencies=[Depends(protect_payroll_endpoint())])
+
+# For admin-only endpoints
+@router.get("/example", dependencies=[Depends(admin_only())])
+```
+
+### Testing the Authorization
+
+You can test the authorization system using the following endpoints:
+
+- `/auth/test-auth`: Tests basic authentication
+- `/auth/test-admin`: Tests Admin-only access
+- `/auth/test-employee`: Tests employee data access
+- `/auth/test-payroll`: Tests payroll data access
+
+## Authentication
+
+The system uses JWT (JSON Web Tokens) for authentication. To access protected endpoints:
+
+1. Login via `/auth/login` to get a JWT token
+2. Include the token in the Authorization header for subsequent requests:
+   - `Authorization: Bearer your_token_here`
+
+## Development
+
+### Prerequisites
+
+- Python 3.8+
+- MySQL Server
+- SQL Server
+- Virtual environment
+
+### Setup
+
+1. Clone the repository
+2. Create a virtual environment: `python -m venv venv`
+3. Activate the virtual environment:
+   - Windows: `venv\Scripts\activate`
+   - Unix/MacOS: `source venv/bin/activate`
+4. Install dependencies: `pip install -r requirements.txt`
+5. Create `.env` file with required environment variables
+6. Run the server: `python main.py`
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Server settings
+PORT=9000
+CORS_ORIGIN=http://localhost:5173
+
+# JWT settings
+JWT_SECRET=your-secret-key
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# MySQL Database
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your-password
+MYSQL_DATABASE=hr_payroll
+
+# SQL Server Database
+SQLSERVER_HOST=localhost
+SQLSERVER_PORT=1433
+SQLSERVER_USER=sa
+SQLSERVER_PASSWORD=your-password
+SQLSERVER_DATABASE=HUMAN
+```
