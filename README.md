@@ -4,7 +4,6 @@ Hệ thống quản lý Nhân sự và Lương được phát triển bằng Pyt
 
 ## Cấu trúc dự án
 
-<<<<<<< Updated upstream
 - **Quản lý nhân viên**: Thêm, sửa, xóa, xem thông tin nhân viên
 - **Quản lý phòng ban**: Tổ chức và quản lý cấu trúc phòng ban
 - **Hệ thống lương**: Quản lý lương, phụ cấp, và các khoản khấu trừ
@@ -43,7 +42,6 @@ Hệ thống quản lý Nhân sự và Lương được phát triển bằng Pyt
 ```bash
 git clone https://github.com/trunghieu013/Dashboard-HR-PAYROLL.git
 cd Dashboard-HR-PAYROLL-
-=======
 ```
 dashboard-hr-payroll/
 ├── python_server/        # Backend API (Python FastAPI)
@@ -57,7 +55,6 @@ dashboard-hr-payroll/
 └── dashboard/            # Frontend (React/Vite)
     ├── src/              # Mã nguồn frontend
     └── public/           # Tài nguyên tĩnh
->>>>>>> Stashed changes
 ```
 
 ## Công nghệ sử dụng

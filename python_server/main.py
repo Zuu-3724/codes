@@ -9,18 +9,18 @@ import os
 # load_dotenv()
 
 # Set environment variables directly
-os.environ["FORCE_DEMO_DATA"] = "false"
-os.environ["JWT_SECRET"] = "hrmanagementsystem2023secretkey"
-os.environ["JWT_ALGORITHM"] = "HS256"
-os.environ["JWT_EXPIRATION_MINUTES"] = "60"
-os.environ["MYSQL_HOST"] = "localhost"
-os.environ["MYSQL_USER"] = "root"
-os.environ["MYSQL_PASSWORD"] = "YES"
-os.environ["MYSQL_DATABASE"] = "payroll"
-os.environ["SQLSERVER_HOST"] = "localhost"
-os.environ["SQLSERVER_DATABASE"] = "HUMAN"
-os.environ["SQLSERVER_USER"] = "sa"
-os.environ["SQLSERVER_PASSWORD"] = "trunghieu013"
+# os.environ["FORCE_DEMO_DATA"] = "false"
+# os.environ["JWT_SECRET"] = "hrmanagementsystem2023secretkey"
+# os.environ["JWT_ALGORITHM"] = "HS256"
+# os.environ["JWT_EXPIRATION_MINUTES"] = "60"
+# os.environ["MYSQL_HOST"] = "localhost"
+# os.environ["MYSQL_USER"] = "root"
+# os.environ["MYSQL_PASSWORD"] = "Nhat@2004"
+# os.environ["MYSQL_DATABASE"] = "payroll"
+# os.environ["SQLSERVER_HOST"] = "localhost"
+# os.environ["SQLSERVER_DATABASE"] = "HUMAN"
+# os.environ["SQLSERVER_USER"] = "sa"
+# os.environ["SQLSERVER_PASSWORD"] = "trunghieu013"
 
 # Import routers
 from routes.payroll_route import payroll_router

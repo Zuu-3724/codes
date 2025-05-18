@@ -1,9 +1,8 @@
 import os
-import mysql.connector
 from mysql.connector import Error as MySQLError, pooling
 import pyodbc
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 # from dotenv import load_dotenv # Comment out this line
 from fastapi import HTTPException
 import time
@@ -18,6 +17,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("database")
+
 
 # MySQL Configuration
 MYSQL_CONFIG = {
