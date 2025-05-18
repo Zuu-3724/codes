@@ -4,6 +4,7 @@ import os
 
 load_dotenv()
 
+
 def test_sqlserver_connection():
     try:
         # Find available SQL Server driver
@@ -13,17 +14,17 @@ def test_sqlserver_connection():
             '{SQL Server Native Client 11.0}',
             '{SQL Server}'
         ]
-        
+
         driver = None
         for d in drivers:
             try:
                 print(f"Testing driver: {d}")
                 connection_string = (
                     f"DRIVER={d};"
-                    f"SERVER={os.getenv('SQLSERVER_HOST', '.')};"
-                    f"DATABASE={os.getenv('SQLSERVER_DATABASE', 'HUMAN')};"
-                    f"UID={os.getenv('SQLSERVER_USER', 'sa')};"
-                    f"PWD={os.getenv('SQLSERVER_PASSWORD', 'trunghieu013')};"
+                    "SERVER=HONG-NHAT\MSSQLSERVER01;"
+                    f"DATABASE={os.getenv('SQLSERVER_DATABASE', 'sqlserver')};"
+                    f"UID={os.getenv('SQLSERVER_USER', 'nhatdit')};"
+                    f"PWD={os.getenv('SQLSERVER_PASSWORD', 'abc')};"
                     "TrustServerCertificate=yes;"
                     "Encrypt=no;"
                 )
@@ -34,31 +35,31 @@ def test_sqlserver_connection():
             except pyodbc.Error as e:
                 print(f"Failed with {d}: {str(e)}")
                 continue
-        
+
         if not driver:
             print("No working SQL Server driver found!")
             return
-        
+
         # Test connection and check tables
         connection_string = (
             f"DRIVER={driver};"
             f"SERVER={os.getenv('SQLSERVER_HOST', '.')};"
             f"DATABASE={os.getenv('SQLSERVER_DATABASE', 'HUMAN')};"
-            f"UID={os.getenv('SQLSERVER_USER', 'sa')};"
-            f"PWD={os.getenv('SQLSERVER_PASSWORD', 'trunghieu013')};"
+            "UID='HONG-NHAT\MSSQLSERVER01';"
+            f"PWD={os.getenv('SQLSERVER_PASSWORD', 'Nhat@2004')};"
             "TrustServerCertificate=yes;"
             "Encrypt=no;"
         )
-        
+
         connection = pyodbc.connect(connection_string)
         print("\nSuccessfully connected to SQL Server!")
-        
+
         # Get server version
         cursor = connection.cursor()
         cursor.execute("SELECT @@VERSION")
         version = cursor.fetchone()[0]
         print(f"\nSQL Server Version:\n{version}")
-        
+
         # Check required tables
         required_tables = [
             '[HUMAN].[dbo].[Departments]',
@@ -67,20 +68,21 @@ def test_sqlserver_connection():
             '[HUMAN].[dbo].[Attendance]',
             '[HUMAN].[dbo].[Payroll]'
         ]
-        
+
         print("\nChecking required tables:")
         for table in required_tables:
             try:
                 cursor.execute(f"SELECT TOP 1 * FROM {table}")
                 print(f"✓ {table} exists and is accessible")
                 # Print column names
-                print("  Columns:", ", ".join([column[0] for column in cursor.description]))
+                print("  Columns:", ", ".join(
+                    [column[0] for column in cursor.description]))
             except pyodbc.Error as e:
                 print(f"✗ Error with {table}: {str(e)}")
-        
+
         # Test specific queries
         print("\nTesting specific queries:")
-        
+
         # Test employee stats query
         print("\nTesting employee stats query:")
         query = """
@@ -100,13 +102,14 @@ def test_sqlserver_connection():
             print("✓ Employee stats query executed successfully")
             result = cursor.fetchone()
             if result:
-                print("  Sample result:", dict(zip([column[0] for column in cursor.description], result)))
+                print("  Sample result:", dict(
+                    zip([column[0] for column in cursor.description], result)))
         except pyodbc.Error as e:
             print(f"✗ Error executing employee stats query: {str(e)}")
-        
+
         cursor.close()
         connection.close()
-        
+
     except pyodbc.Error as err:
         print(f"\nError: {err}")
         print("\nPlease check:")
@@ -117,5 +120,6 @@ def test_sqlserver_connection():
         print("5. SQL Server port is accessible")
         print("6. Required ODBC drivers are installed")
 
+
 if __name__ == "__main__":
-    test_sqlserver_connection() 
+    test_sqlserver_connection()

@@ -126,7 +126,7 @@ const Payroll = () => {
       </div>
 
       {/* Server connection notification */}
-      <div className="alert alert-warning d-flex align-items-center mb-4">
+      {/*<div className="alert alert-warning d-flex align-items-center mb-4">
         <FaExclamationTriangle className="me-2" />
         <div>
           <strong>Cannot connect to the database server.</strong> Displaying
@@ -138,7 +138,7 @@ const Payroll = () => {
             Retry
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Payroll Filter Section */}
       <div className="card mb-4 border-0 shadow-sm">

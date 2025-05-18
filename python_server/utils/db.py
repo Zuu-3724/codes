@@ -23,7 +23,7 @@ logger = logging.getLogger("database")
 MYSQL_CONFIG = {
     'host': os.getenv('MYSQL_HOST', 'localhost'),
     'user': os.getenv('MYSQL_USER', 'root'),
-    'password': os.getenv('MYSQL_PASSWORD', 'YES'),
+    'password': os.getenv('MYSQL_PASSWORD', 'Nhat@2004'),
     'database': os.getenv('MYSQL_DATABASE', 'payroll'),
     'pool_name': 'mypool',
     'pool_size': 10
@@ -35,7 +35,8 @@ FORCE_DEMO_DATA = os.getenv('FORCE_DEMO_DATA', 'false').lower() == 'true'
 # Initialize MySQL connection pool
 try:
     if FORCE_DEMO_DATA:
-        logger.warning("FORCE_DEMO_DATA is set to True. Using demo data for MySQL.")
+        logger.warning(
+            "FORCE_DEMO_DATA is set to True. Using demo data for MySQL.")
         mysql_pool = None
     else:
         mysql_pool = pooling.MySQLConnectionPool(**MYSQL_CONFIG)
@@ -46,32 +47,37 @@ except Exception as e:
 
 # SQL Server Configuration
 SQL_SERVER_CONFIG = {
-    'driver': '{ODBC Driver 13 for SQL Server}',  # Using the available driver on this system
-    'server': os.getenv('SQLSERVER_HOST', 'localhost'),
-    'database': os.getenv('SQLSERVER_DATABASE', 'HUMAN'),
-    'uid': os.getenv('SQLSERVER_USER', 'sa'),
-    'pwd': os.getenv('SQLSERVER_PASSWORD', 'trunghieu013'),
+    # Using the available driver on this system
+    'driver': '{ODBC Driver 18 for SQL Server}',
+    'server': 'HONG-NHAT\MSSQLSERVER01',
+    'database': 'sqlserver',
+    'uid': 'Zuu',
+    'pwd': 'Nhat@2004',
 }
 
 # Initialize SQL Server connection pool
 sqlserver_pool = None
 try:
     if FORCE_DEMO_DATA:
-        logger.warning("FORCE_DEMO_DATA is set to True. Using demo data for SQL Server.")
+        logger.warning(
+            "FORCE_DEMO_DATA is set to True. Using demo data for SQL Server.")
     else:
         # Check available SQL Server drivers
-        drivers = [x for x in pyodbc.drivers() if x.endswith(' for SQL Server')]
+        drivers = [x for x in pyodbc.drivers(
+        ) if x.endswith(' for SQL Server')]
         if drivers:
             logger.info(f"Found SQL Server driver: {drivers[0]}")
             SQL_SERVER_CONFIG['driver'] = drivers[0]
-            
+
             # Use direct connection instead of pooling since there's an issue with ConnectionPool
-            logger.info("Skipping SQL Server connection pool due to compatibility issues.")
+            logger.info(
+                "Skipping SQL Server connection pool due to compatibility issues.")
             logger.info("Will create connections directly when needed.")
         else:
             logger.warning("No SQL Server driver found")
 except Exception as e:
     logger.error(f"Error initializing SQL Server: {str(e)}")
+
 
 def retry_on_error(max_retries=3, delay=1):
     """Decorator to retry database operations on failure"""
@@ -90,17 +96,18 @@ def retry_on_error(max_retries=3, delay=1):
         return wrapper
     return decorator
 
+
 @retry_on_error()
 async def execute_mysql_query(query: str, params=None):
     """Execute a MySQL query with retry logic"""
     if mysql_pool is None:
         logger.warning("MySQL connection not available. Returning mock data.")
         return []  # Return empty list for mock data
-        
+
     try:
         connection = mysql_pool.get_connection()
         cursor = connection.cursor(dictionary=True)
-        
+
         try:
             cursor.execute(query, params or ())
             if query.strip().upper().startswith('SELECT'):
@@ -116,25 +123,27 @@ async def execute_mysql_query(query: str, params=None):
         logger.error(f"MySQL query error: {str(e)}")
         raise
 
+
 @retry_on_error()
 async def execute_sqlserver_query(query: str, params=None):
     """Execute a SQL Server query with retry logic"""
     if FORCE_DEMO_DATA:
-        logger.warning("SQL Server connection not available. Returning mock data.")
+        logger.warning(
+            "SQL Server connection not available. Returning mock data.")
         return []  # Return empty list for mock data
-        
+
     try:
         # Create a direct connection instead of using pool
         connection_string = f"DRIVER={SQL_SERVER_CONFIG['driver']};SERVER={SQL_SERVER_CONFIG['server']};DATABASE={SQL_SERVER_CONFIG['database']};UID={SQL_SERVER_CONFIG['uid']};PWD={SQL_SERVER_CONFIG['pwd']};TrustServerCertificate=yes"
         connection = pyodbc.connect(connection_string)
         cursor = connection.cursor()
-        
+
         try:
             if params:
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
-            
+
             if query.strip().upper().startswith('SELECT'):
                 columns = [column[0] for column in cursor.description]
                 result = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -150,6 +159,8 @@ async def execute_sqlserver_query(query: str, params=None):
         raise
 
 # Health check functions - non-async version for direct calls
+
+
 def check_mysql_health():
     """Check MySQL connection health"""
     if FORCE_DEMO_DATA:
@@ -157,14 +168,14 @@ def check_mysql_health():
             "status": "demo",
             "version": "Demo Mode"
         }
-        
+
     try:
         if mysql_pool is None:
             return {
                 "status": "unhealthy",
                 "error": "MySQL connection pool not initialized"
             }
-            
+
         connection = mysql_pool.get_connection()
         cursor = connection.cursor()
         cursor.execute("SELECT VERSION()")
@@ -182,6 +193,7 @@ def check_mysql_health():
             "error": str(e)
         }
 
+
 def check_sqlserver_health():
     """Check SQL Server connection health"""
     if FORCE_DEMO_DATA:
@@ -189,7 +201,7 @@ def check_sqlserver_health():
             "status": "demo",
             "version": "Demo Mode"
         }
-        
+
     try:
         # Create a direct connection instead of using pool
         connection_string = f"DRIVER={SQL_SERVER_CONFIG['driver']};SERVER={SQL_SERVER_CONFIG['server']};DATABASE={SQL_SERVER_CONFIG['database']};UID={SQL_SERVER_CONFIG['uid']};PWD={SQL_SERVER_CONFIG['pwd']};TrustServerCertificate=yes"
@@ -210,6 +222,7 @@ def check_sqlserver_health():
             "error": str(e)
         }
 
+
 # SQL Server Connection settings
 sql_server_config = {
     'server': os.getenv('SQLSERVER_HOST', '.'),
@@ -226,6 +239,7 @@ sql_server_config = {
 sql_server_pool = []
 sql_server_pool_lock = False
 
+
 def retry_on_error(max_retries=3, delay=1):
     """Decorator for retrying database operations"""
     def decorator(func):
@@ -239,16 +253,20 @@ def retry_on_error(max_retries=3, delay=1):
                     last_error = e
                     if attempt < max_retries - 1:
                         wait_time = delay * (attempt + 1)
-                        logger.warning(f"Attempt {attempt + 1} failed, retrying in {wait_time}s: {str(e)}")
+                        logger.warning(
+                            f"Attempt {attempt + 1} failed, retrying in {wait_time}s: {str(e)}")
                         time.sleep(wait_time)
                     else:
-                        logger.error(f"All {max_retries} attempts failed: {str(e)}")
+                        logger.error(
+                            f"All {max_retries} attempts failed: {str(e)}")
                         raise
             raise last_error
         return wrapper
     return decorator
 
 # Find available SQL Server driver
+
+
 def get_sql_server_driver():
     """Find and test available SQL Server drivers"""
     drivers = [
@@ -276,16 +294,18 @@ def get_sql_server_driver():
             continue
     return '{SQL Server}'  # Default fallback
 
+
 # Add driver to SQL Server config after detection
 sql_server_config['driver'] = get_sql_server_driver()
+
 
 async def initialize_sql_server_pool():
     """Initialize the SQL Server connection pool"""
     global sql_server_pool, sql_server_pool_lock
-    
+
     if sql_server_pool_lock:
         return
-    
+
     sql_server_pool_lock = True
     try:
         # Build connection string
@@ -301,7 +321,7 @@ async def initialize_sql_server_pool():
             "ApplicationIntent=ReadWrite;"
             "CharacterSet=UTF-8;"
         )
-        
+
         # Create pool connections
         for _ in range(sql_server_config['pool_size']):
             conn = pyodbc.connect(connection_string)
@@ -309,19 +329,21 @@ async def initialize_sql_server_pool():
             conn.setdecoding(pyodbc.SQL_CHAR, encoding='cp1252')
             conn.setdecoding(pyodbc.SQL_WCHAR, encoding='cp1252')
             sql_server_pool.append({"connection": conn, "in_use": False})
-        
-        logger.info(f"SQL Server connection pool initialized with {sql_server_config['pool_size']} connections")
+
+        logger.info(
+            f"SQL Server connection pool initialized with {sql_server_config['pool_size']} connections")
     except Exception as e:
         logger.error(f"Error initializing SQL Server pool: {str(e)}")
         sql_server_pool = []
     finally:
         sql_server_pool_lock = False
 
+
 async def get_sql_server_connection_from_pool():
     """Get a connection from the SQL Server pool"""
     if not sql_server_pool:
         await initialize_sql_server_pool()
-    
+
     # Find available connection
     for conn_info in sql_server_pool:
         if not conn_info["in_use"]:
@@ -338,12 +360,13 @@ async def get_sql_server_connection_from_pool():
                     return conn_info
                 except:
                     continue
-    
+
     # No available connections, create new one
     raise HTTPException(
         status_code=503,
         detail={"Status": False, "Message": "No database connections available"}
     )
+
 
 @retry_on_error(max_retries=3, delay=1)
 async def execute_sqlserver_query(query: str, params: dict = None):
@@ -353,27 +376,27 @@ async def execute_sqlserver_query(query: str, params: dict = None):
         conn_info = await get_sql_server_connection_from_pool()
         connection = conn_info["connection"]
         cursor = connection.cursor()
-        
+
         if params:
             # Handle named parameters in SQL Server query
             for key, value in params.items():
                 # Replace named parameters with ? placeholders
                 query = query.replace(f"@{key}", "?")
-            
+
             # Execute with parameters as a tuple in the same order they appear in the query
             cursor.execute(query, tuple(params.values()))
         else:
             cursor.execute(query)
-        
+
         if query.strip().upper().startswith(('SELECT')):
             columns = [column[0] for column in cursor.description]
             rows = cursor.fetchall()
-            
+
             # Convert rows to dictionaries
             result = []
             for row in rows:
                 result.append(dict(zip(columns, row)))
-            
+
             return result
         else:
             connection.commit()
@@ -382,18 +405,21 @@ async def execute_sqlserver_query(query: str, params: dict = None):
         logger.error(f"Error executing SQL Server query: {err}")
         raise HTTPException(
             status_code=500,
-            detail={"Status": False, "Error": str(err), "Message": "Database query failed"}
+            detail={"Status": False, "Error": str(
+                err), "Message": "Database query failed"}
         )
     finally:
         if conn_info:
             conn_info["in_use"] = False
 
 # Get MySQL connection from pool
+
+
 async def get_mysql_connection():
     """Get a connection from the MySQL pool"""
     if not mysql_pool:
         raise Exception("MySQL connection pool not available")
-    
+
     try:
         connection = mysql_pool.get_connection()
         return connection
@@ -402,6 +428,8 @@ async def get_mysql_connection():
         raise
 
 # Execute MySQL query
+
+
 async def execute_mysql_query(query: str, params: tuple = None):
     """Execute a MySQL query and return results"""
     connection = None
@@ -412,7 +440,7 @@ async def execute_mysql_query(query: str, params: tuple = None):
             cursor.execute(query, params)
         else:
             cursor.execute(query)
-        
+
         if query.strip().upper().startswith(('SELECT', 'SHOW')):
             result = cursor.fetchall()
             return result
@@ -427,6 +455,8 @@ async def execute_mysql_query(query: str, params: tuple = None):
             connection.close()
 
 # Get SQL Server connection
+
+
 async def get_sqlserver_connection():
     """Get a connection to SQL Server"""
     try:
@@ -455,24 +485,30 @@ async def get_sqlserver_connection():
         if "Login failed" in error_msg:
             raise HTTPException(
                 status_code=500,
-                detail={"Status": False, "Error": "Database authentication failed", "Message": "Invalid username or password"}
+                detail={"Status": False, "Error": "Database authentication failed",
+                        "Message": "Invalid username or password"}
             )
         elif "Cannot open database" in error_msg:
             raise HTTPException(
                 status_code=500,
-                detail={"Status": False, "Error": "Database not found", "Message": f"Database '{SQL_SERVER_CONFIG['database']}' does not exist"}
+                detail={"Status": False, "Error": "Database not found",
+                        "Message": f"Database '{SQL_SERVER_CONFIG['database']}' does not exist"}
             )
         else:
             raise HTTPException(
                 status_code=500,
-                detail={"Status": False, "Error": "Connection failed", "Message": "Could not connect to database server"}
+                detail={"Status": False, "Error": "Connection failed",
+                        "Message": "Could not connect to database server"}
             )
 
 # Async health check functions
+
+
 async def check_mysql_health_async() -> Dict[str, Any]:
     """Check MySQL connection health asynchronously"""
     return check_mysql_health()
 
+
 async def check_sqlserver_health_async() -> Dict[str, Any]:
     """Check SQL Server connection health asynchronously"""
-    return check_sqlserver_health() 
+    return check_sqlserver_health()

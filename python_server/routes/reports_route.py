@@ -58,19 +58,22 @@ DEMO_ORGANIZATION_STATS = {
 # Check if we're in demo mode
 FORCE_DEMO_DATA = os.getenv('FORCE_DEMO_DATA', 'false').lower() == 'true'
 
+
 async def check_db_connection():
     """Check database connection before executing queries"""
     if FORCE_DEMO_DATA:
         logger.info("Using demo data, skipping connection check")
         return
-        
+
     health = await check_sqlserver_health()
     if health["status"] != "healthy":
         logger.error(f"Database connection error: {health}")
         raise HTTPException(
             status_code=503,
-            detail={"Status": False, "Message": "Database connection error. Please try again later."}
+            detail={"Status": False,
+                    "Message": "Database connection error. Please try again later."}
         )
+
 
 @reports_router.get("/employee-stats")
 async def get_employee_stats(year: int, request: Request):
@@ -79,15 +82,16 @@ async def get_employee_stats(year: int, request: Request):
     """
     try:
         if FORCE_DEMO_DATA:
-            logger.info(f"Using demo data for employee statistics (year: {year})")
+            logger.info(
+                f"Using demo data for employee statistics (year: {year})")
             return {
                 "Status": True,
                 "Data": DEMO_EMPLOYEE_STATS
             }
-            
+
         await check_db_connection()
         logger.info(f"Getting employee statistics for year {year}")
-        
+
         # Get overall employee stats
         stats_query = """
             SELECT COUNT(*) as TotalEmployees,
@@ -97,9 +101,9 @@ async def get_employee_stats(year: int, request: Request):
             AVG(Salary) as AvgSalary
             FROM [HUMAN].[dbo].[Employees]
         """
-        
+
         stats_results = await execute_sqlserver_query(stats_query, {"Year": year})
-        
+
         # Get department counts
         dept_query = """
             SELECT d.DepartmentName as name, COUNT(e.EmployeeID) as count
@@ -108,15 +112,16 @@ async def get_employee_stats(year: int, request: Request):
             GROUP BY d.DepartmentName
             ORDER BY count DESC
         """
-        
+
         dept_results = await execute_sqlserver_query(dept_query)
-        
+
         # Format results
         total_employees = stats_results[0]["TotalEmployees"] if stats_results else 0
         total_new_hires = stats_results[0]["NewHires"] if stats_results else 0
-        turnover_rate = round(stats_results[0]["TurnoverRate"] or 0, 1) if stats_results else 0
+        turnover_rate = round(
+            stats_results[0]["TurnoverRate"] or 0, 1) if stats_results else 0
         avg_salary = stats_results[0]["AvgSalary"] if stats_results else 0
-        
+
         return {
             "Status": True,
             "Data": {
@@ -129,7 +134,7 @@ async def get_employee_stats(year: int, request: Request):
                 }
             }
         }
-    
+
     except HTTPException as he:
         raise he
     except Exception as e:
@@ -140,6 +145,7 @@ async def get_employee_stats(year: int, request: Request):
             "Data": DEMO_EMPLOYEE_STATS
         }
 
+
 @reports_router.get("/mysql/employee-stats")
 async def get_employee_stats_mysql(year: int, request: Request):
     """
@@ -147,14 +153,15 @@ async def get_employee_stats_mysql(year: int, request: Request):
     """
     try:
         if FORCE_DEMO_DATA:
-            logger.info(f"Using demo data for MySQL employee statistics (year: {year})")
+            logger.info(
+                f"Using demo data for MySQL employee statistics (year: {year})")
             return {
                 "Status": True,
                 "Data": DEMO_EMPLOYEE_STATS
             }
-            
+
         logger.info(f"Getting employee statistics from MySQL for year {year}")
-        
+
         # Get overall employee stats from MySQL
         stats_query = """
             SELECT 
@@ -165,9 +172,9 @@ async def get_employee_stats_mysql(year: int, request: Request):
                 AVG(Salary) as AvgSalary
             FROM employee
         """
-        
+
         stats_results = await execute_mysql_query(stats_query, (year, year))
-        
+
         # Get department counts from MySQL
         dept_query = """
             SELECT d.DepartmentName as name, COUNT(e.EmployeeID) as count
@@ -176,15 +183,16 @@ async def get_employee_stats_mysql(year: int, request: Request):
             GROUP BY d.DepartmentName
             ORDER BY count DESC
         """
-        
+
         dept_results = await execute_mysql_query(dept_query)
-        
+
         # Format results
         total_employees = stats_results[0]["TotalEmployees"] if stats_results else 0
         total_new_hires = stats_results[0]["NewHires"] if stats_results else 0
-        turnover_rate = round(stats_results[0]["TurnoverRate"] or 0, 1) if stats_results else 0
+        turnover_rate = round(
+            stats_results[0]["TurnoverRate"] or 0, 1) if stats_results else 0
         avg_salary = stats_results[0]["AvgSalary"] if stats_results else 0
-        
+
         return {
             "Status": True,
             "Data": {
@@ -197,7 +205,7 @@ async def get_employee_stats_mysql(year: int, request: Request):
                 }
             }
         }
-    
+
     except HTTPException as he:
         raise he
     except Exception as e:
@@ -208,6 +216,7 @@ async def get_employee_stats_mysql(year: int, request: Request):
             "Data": DEMO_EMPLOYEE_STATS
         }
 
+
 @reports_router.get("/salary-stats")
 async def get_salary_stats(year: int, request: Request):
     """
@@ -215,15 +224,16 @@ async def get_salary_stats(year: int, request: Request):
     """
     try:
         if FORCE_DEMO_DATA:
-            logger.info(f"Using demo data for salary statistics (year: {year})")
+            logger.info(
+                f"Using demo data for salary statistics (year: {year})")
             return {
                 "Status": True,
                 "Data": DEMO_SALARY_STATS
             }
-            
+
         await check_db_connection()
         logger.info(f"Getting salary statistics for year {year}")
-        
+
         # Sample SQL Server query for salary stats
         query = """
             SELECT 
@@ -234,9 +244,9 @@ async def get_salary_stats(year: int, request: Request):
             FROM [HUMAN].[dbo].[Employees]
             WHERE Status = 'Active'
         """
-        
+
         results = await execute_sqlserver_query(query)
-        
+
         if not results:
             return {
                 "Status": True,
@@ -247,7 +257,7 @@ async def get_salary_stats(year: int, request: Request):
                     "totalBonuses": 0
                 }
             }
-        
+
         return {
             "Status": True,
             "Data": {
@@ -257,7 +267,7 @@ async def get_salary_stats(year: int, request: Request):
                 "totalBonuses": results[0]["TotalBonuses"] or 0
             }
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting salary statistics: {str(e)}")
         # Return demo data on error
@@ -266,6 +276,7 @@ async def get_salary_stats(year: int, request: Request):
             "Data": DEMO_SALARY_STATS
         }
 
+
 @reports_router.get("/mysql/salary-stats")
 async def get_salary_stats_mysql(year: int, request: Request):
     """
@@ -273,14 +284,15 @@ async def get_salary_stats_mysql(year: int, request: Request):
     """
     try:
         if FORCE_DEMO_DATA:
-            logger.info(f"Using demo data for MySQL salary statistics (year: {year})")
+            logger.info(
+                f"Using demo data for MySQL salary statistics (year: {year})")
             return {
                 "Status": True,
                 "Data": DEMO_SALARY_STATS
             }
-            
+
         logger.info(f"Getting salary statistics from MySQL for year {year}")
-        
+
         # MySQL query for salary stats
         query = """
             SELECT 
@@ -291,9 +303,9 @@ async def get_salary_stats_mysql(year: int, request: Request):
             FROM employee
             WHERE Status = 'Active'
         """
-        
+
         results = await execute_mysql_query(query)
-        
+
         if not results:
             return {
                 "Status": True,
@@ -304,7 +316,7 @@ async def get_salary_stats_mysql(year: int, request: Request):
                     "totalBonuses": 0
                 }
             }
-        
+
         return {
             "Status": True,
             "Data": {
@@ -314,7 +326,7 @@ async def get_salary_stats_mysql(year: int, request: Request):
                 "totalBonuses": float(results[0]["TotalBonuses"] or 0)
             }
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting MySQL salary statistics: {str(e)}")
         # Return demo data on error
@@ -322,6 +334,7 @@ async def get_salary_stats_mysql(year: int, request: Request):
             "Status": True,
             "Data": DEMO_SALARY_STATS
         }
+
 
 @reports_router.get("/organization-stats")
 async def get_organization_stats(request: Request):
@@ -335,10 +348,10 @@ async def get_organization_stats(request: Request):
                 "Status": True,
                 "Data": DEMO_ORGANIZATION_STATS
             }
-            
+
         await check_db_connection()
         logger.info("Getting organization structure statistics")
-        
+
         # Get department stats
         dept_query = """
             SELECT 
@@ -348,9 +361,9 @@ async def get_organization_stats(request: Request):
                 (SELECT TOP 1 DepartmentName FROM [HUMAN].[dbo].[Departments] WHERE EmployeeCount > 0 ORDER BY EmployeeCount ASC) as SmallestDepartment
             FROM [HUMAN].[dbo].[Departments]
         """
-        
+
         dept_results = await execute_sqlserver_query(dept_query)
-        
+
         # Get structure stats
         structure_query = """
             SELECT 
@@ -361,9 +374,9 @@ async def get_organization_stats(request: Request):
             FROM [HUMAN].[dbo].[Employees]
             WHERE Status = 'Active'
         """
-        
+
         structure_results = await execute_sqlserver_query(structure_query)
-        
+
         # Get gender stats
         gender_query = """
             SELECT 
@@ -372,22 +385,27 @@ async def get_organization_stats(request: Request):
             FROM [HUMAN].[dbo].[Employees]
             WHERE Status = 'Active'
         """
-        
+
         gender_results = await execute_sqlserver_query(gender_query)
-        
+
         # Format results
         total_departments = dept_results[0]["TotalDepartments"] if dept_results else 0
-        avg_employees_per_dept = round(dept_results[0]["AvgEmployeesPerDepartment"] or 0, 1) if dept_results else 0
+        avg_employees_per_dept = round(
+            dept_results[0]["AvgEmployeesPerDepartment"] or 0, 1) if dept_results else 0
         largest_department = dept_results[0]["LargestDepartment"] if dept_results else ""
         smallest_department = dept_results[0]["SmallestDepartment"] if dept_results else ""
-        
+
         total_managers = structure_results[0]["TotalManagers"] if structure_results else 0
-        manager_ratio = round(structure_results[0]["ManagerToEmployeeRatio"] or 0, 2) if structure_results else 0
-        avg_team_size = round(structure_results[0]["AvgTeamSize"] or 0, 1) if structure_results else 0
-        
-        male_percentage = round(gender_results[0]["Male"] or 0, 0) if gender_results else 0
-        female_percentage = round(gender_results[0]["Female"] or 0, 0) if gender_results else 0
-        
+        manager_ratio = round(
+            structure_results[0]["ManagerToEmployeeRatio"] or 0, 2) if structure_results else 0
+        avg_team_size = round(
+            structure_results[0]["AvgTeamSize"] or 0, 1) if structure_results else 0
+
+        male_percentage = round(
+            gender_results[0]["Male"] or 0, 0) if gender_results else 0
+        female_percentage = round(
+            gender_results[0]["Female"] or 0, 0) if gender_results else 0
+
         return {
             "Status": True,
             "Data": {
@@ -408,7 +426,7 @@ async def get_organization_stats(request: Request):
                 }
             }
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting organization statistics: {str(e)}")
         # Return demo data on error
@@ -416,6 +434,7 @@ async def get_organization_stats(request: Request):
             "Status": True,
             "Data": DEMO_ORGANIZATION_STATS
         }
+
 
 @reports_router.get("/mysql/organization-stats")
 async def get_organization_stats_mysql(request: Request):
@@ -429,9 +448,9 @@ async def get_organization_stats_mysql(request: Request):
                 "Status": True,
                 "Data": DEMO_ORGANIZATION_STATS
             }
-            
+
         logger.info("Getting organization structure statistics from MySQL")
-        
+
         # Get department stats from MySQL
         dept_query = """
             SELECT 
@@ -441,9 +460,9 @@ async def get_organization_stats_mysql(request: Request):
                 (SELECT DepartmentName FROM department WHERE EmployeeCount > 0 ORDER BY EmployeeCount ASC LIMIT 1) as SmallestDepartment
             FROM department
         """
-        
+
         dept_results = await execute_mysql_query(dept_query)
-        
+
         # Get structure stats from MySQL
         structure_query = """
             SELECT 
@@ -453,9 +472,9 @@ async def get_organization_stats_mysql(request: Request):
             FROM employee
             WHERE Status = 'Active'
         """
-        
+
         structure_results = await execute_mysql_query(structure_query)
-        
+
         # Get gender stats from MySQL
         gender_query = """
             SELECT 
@@ -464,22 +483,27 @@ async def get_organization_stats_mysql(request: Request):
             FROM employee
             WHERE Status = 'Active'
         """
-        
+
         gender_results = await execute_mysql_query(gender_query)
-        
+
         # Format results
         total_departments = dept_results[0]["TotalDepartments"] if dept_results else 0
-        avg_employees_per_dept = round(float(dept_results[0]["AvgEmployeesPerDepartment"] or 0), 1) if dept_results else 0
+        avg_employees_per_dept = round(float(
+            dept_results[0]["AvgEmployeesPerDepartment"] or 0), 1) if dept_results else 0
         largest_department = dept_results[0]["LargestDepartment"] if dept_results else ""
         smallest_department = dept_results[0]["SmallestDepartment"] if dept_results else ""
-        
+
         total_managers = structure_results[0]["TotalManagers"] if structure_results else 0
-        manager_ratio = round(float(structure_results[0]["ManagerToEmployeeRatio"] or 0), 2) if structure_results else 0
-        avg_team_size = round(float(structure_results[0]["AvgTeamSize"] or 0), 1) if structure_results else 0
-        
-        male_percentage = round(float(gender_results[0]["Male"] or 0), 0) if gender_results else 0
-        female_percentage = round(float(gender_results[0]["Female"] or 0), 0) if gender_results else 0
-        
+        manager_ratio = round(float(
+            structure_results[0]["ManagerToEmployeeRatio"] or 0), 2) if structure_results else 0
+        avg_team_size = round(
+            float(structure_results[0]["AvgTeamSize"] or 0), 1) if structure_results else 0
+
+        male_percentage = round(
+            float(gender_results[0]["Male"] or 0), 0) if gender_results else 0
+        female_percentage = round(
+            float(gender_results[0]["Female"] or 0), 0) if gender_results else 0
+
         return {
             "Status": True,
             "Data": {
@@ -500,7 +524,7 @@ async def get_organization_stats_mysql(request: Request):
                 }
             }
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting MySQL organization statistics: {str(e)}")
         # Return demo data on error
@@ -508,6 +532,7 @@ async def get_organization_stats_mysql(request: Request):
             "Status": True,
             "Data": DEMO_ORGANIZATION_STATS
         }
+
 
 @reports_router.get("/test")
 async def test_reports_connection():
@@ -518,4 +543,4 @@ async def test_reports_connection():
         "Status": True,
         "Message": "Reports API is operational",
         "DemoMode": FORCE_DEMO_DATA
-    } 
+    }

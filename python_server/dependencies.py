@@ -4,6 +4,7 @@ from utils.db import execute_sqlserver_query
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+
 @asynccontextmanager
 async def get_db() -> AsyncGenerator[Session, None]:
     """Get a database session"""
@@ -11,4 +12,4 @@ async def get_db() -> AsyncGenerator[Session, None]:
         conn = await execute_sqlserver_query("SELECT 1")  # Test connection
         yield conn
     finally:
-        pass  # Connection is automatically closed in execute_sqlserver_query 
+        pass  # Connection is automatically closed in execute_sqlserver_query

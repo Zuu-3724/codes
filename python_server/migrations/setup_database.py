@@ -6,6 +6,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("database_setup")
 
+
 def setup_database():
     """Setup MySQL database and tables"""
     try:
@@ -16,14 +17,14 @@ def setup_database():
             password=''
         )
         cursor = connection.cursor()
-        
+
         # Create database if not exists
         cursor.execute("CREATE DATABASE IF NOT EXISTS payroll")
         logger.info("Database 'payroll' created or already exists")
-        
+
         # Use the database
         cursor.execute("USE payroll")
-        
+
         # Create user table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -38,7 +39,7 @@ def setup_database():
             )
         """)
         logger.info("Table 'users' created or already exists")
-        
+
         # Create other tables
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS departments (
@@ -50,11 +51,11 @@ def setup_database():
             )
         """)
         logger.info("Table 'departments' created or already exists")
-        
+
         # Commit changes
         connection.commit()
         logger.info("Database setup completed successfully")
-        
+
     except Exception as e:
         logger.error(f"Error setting up database: {str(e)}")
         raise
@@ -64,5 +65,6 @@ def setup_database():
         if 'connection' in locals():
             connection.close()
 
+
 if __name__ == "__main__":
-    setup_database() 
+    setup_database()

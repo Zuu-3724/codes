@@ -9,6 +9,7 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("setup_admin")
 
+
 def setup_admin_user():
     """Set up admin user and ensure tables exist with proper naming"""
     try:
@@ -20,15 +21,15 @@ def setup_admin_user():
             database='payroll'
         )
         cursor = connection.cursor()
-        
+
         # Check if user table exists (lowercase)
         cursor.execute("SHOW TABLES LIKE 'user'")
         user_table_exists = cursor.fetchone()
-        
+
         # Check if users table exists (plural)
         cursor.execute("SHOW TABLES LIKE 'users'")
         users_table_exists = cursor.fetchone()
-        
+
         # Create user table if needed
         if not user_table_exists:
             logger.info("Creating 'user' table...")
@@ -46,18 +47,18 @@ def setup_admin_user():
                 )
             """)
             logger.info("Created 'user' table")
-        
+
         # Create admin user
         # Hash password
         hashed_password = bcrypt.hashpw(
-            "admin123".encode('utf-8'), 
+            "admin123".encode('utf-8'),
             bcrypt.gensalt()
         ).decode('utf-8')
-        
+
         # Check if admin user exists
         cursor.execute("SELECT COUNT(*) FROM user WHERE Username = 'admin'")
         admin_exists = cursor.fetchone()[0]
-        
+
         if not admin_exists:
             logger.info("Creating admin user...")
             cursor.execute("""
@@ -67,11 +68,11 @@ def setup_admin_user():
             logger.info("Created admin user!")
         else:
             logger.info("Admin user already exists.")
-        
+
         # Commit changes
         connection.commit()
         logger.info("Admin setup completed successfully")
-        
+
     except Exception as e:
         logger.error(f"Error setting up admin user: {str(e)}")
         raise
@@ -81,7 +82,8 @@ def setup_admin_user():
         if 'connection' in locals():
             connection.close()
 
+
 if __name__ == "__main__":
     # Commented out dotenv loading
     # load_dotenv()
-    setup_admin_user() 
+    setup_admin_user()

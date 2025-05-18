@@ -56,21 +56,25 @@ app.add_middleware(
 )
 
 # Root endpoint
+
+
 @app.get("/")
 async def root():
     return {"message": "HR Payroll API is running"}
 
 # Health check endpoint
+
+
 @app.get("/health")
 async def health_check():
     from utils.db import check_mysql_health, check_sqlserver_health
     import time
-    
+
     start_time = time.time()
     mysql_health = check_mysql_health()
     sqlserver_health = check_sqlserver_health()
     response_time = time.time() - start_time
-    
+
     health = {
         "status": "healthy" if mysql_health["status"] == "healthy" and sqlserver_health["status"] == "healthy" else "unhealthy",
         "uptime": time.time(),  # This would be replaced with actual uptime in a real app
@@ -82,19 +86,23 @@ async def health_check():
         },
         "environment": os.getenv("ENV", "development")
     }
-    
+
     return health
 
 # Include routers with prefix
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(employee_router, prefix="/employees", tags=["Employees"])
 app.include_router(payroll_router, prefix="/payroll", tags=["Payroll"])
-app.include_router(department_router, prefix="/departments", tags=["Departments"], dependencies=[Depends(protect_employee_endpoint())])
-app.include_router(attendance_router, prefix="/attendance", tags=["Attendance"], dependencies=[Depends(protect_employee_endpoint())])
-app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"], dependencies=[Depends(verify_token)])
-app.include_router(reports_router, prefix="/reports", tags=["Reports"], dependencies=[Depends(verify_token)])
+app.include_router(department_router, prefix="/departments",
+                   tags=["Departments"], dependencies=[Depends(protect_employee_endpoint())])
+app.include_router(attendance_router, prefix="/attendance",
+                   tags=["Attendance"], dependencies=[Depends(protect_employee_endpoint())])
+app.include_router(alerts_router, prefix="/alerts",
+                   tags=["Alerts"], dependencies=[Depends(verify_token)])
+app.include_router(reports_router, prefix="/reports",
+                   tags=["Reports"], dependencies=[Depends(verify_token)])
 
 # Run the app
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 9000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True) 
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

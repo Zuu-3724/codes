@@ -11,11 +11,12 @@ logger = logging.getLogger("alerts")
 
 alerts_router = APIRouter()
 
+
 @alerts_router.get("/work-anniversaries", dependencies=[Depends(verify_token)])
 async def get_work_anniversaries():
     try:
         logger.info("Getting work anniversaries")
-        
+
         # Get employees with upcoming work anniversaries in the next 30 days
         query = """
         SELECT 
@@ -32,27 +33,29 @@ async def get_work_anniversaries():
             AND DAY(e.HireDate) <= DAY(DATEADD(DAY, 30, GETDATE()))
         ORDER BY DAY(e.HireDate)
         """
-        
+
         results = await execute_sqlserver_query(query)
-        
+
         # Format dates
         for result in results:
             result['Date'] = result['HireDate'].strftime('%Y-%m-%d')
-            
+
         return {"Status": True, "Data": results}
-        
+
     except Exception as e:
         logger.error(f"Error getting work anniversaries: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail={"Status": False, "Error": str(e), "Message": "Failed to load work anniversaries"}
+            detail={"Status": False, "Error": str(
+                e), "Message": "Failed to load work anniversaries"}
         )
+
 
 @alerts_router.get("/leave-violations", dependencies=[Depends(verify_token)])
 async def get_leave_violations():
     try:
         logger.info("Getting leave violations")
-        
+
         # Get employees who have exceeded their leave limit in the current month
         query = """
         SELECT 
@@ -71,40 +74,47 @@ async def get_leave_violations():
         HAVING COUNT(CASE WHEN a.Status = 'Leave' THEN 1 END) > 3  -- Assuming 3 days is the limit
         ORDER BY LeaveDays DESC
         """
-        
+
         results = await execute_sqlserver_query(query)
-        
+
         # Format results
         for result in results:
-            result['Month'] = datetime(result['Year'], result['Month'], 1).strftime('%B %Y')
-            result['ExcessDays'] = result['LeaveDays'] - 3  # Assuming 3 days is the limit
-            
+            result['Month'] = datetime(
+                result['Year'], result['Month'], 1).strftime('%B %Y')
+            result['ExcessDays'] = result['LeaveDays'] - \
+                3  # Assuming 3 days is the limit
+
         return {"Status": True, "Data": results}
-        
+
     except Exception as e:
         logger.error(f"Error getting leave violations: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail={"Status": False, "Error": str(e), "Message": "Failed to load leave violations"}
+            detail={"Status": False, "Error": str(
+                e), "Message": "Failed to load leave violations"}
         )
+
 
 @alerts_router.put("/acknowledge/{alert_type}/{alert_id}", dependencies=[Depends(verify_token)])
 async def acknowledge_alert(alert_type: str, alert_id: str):
     try:
         logger.info(f"Acknowledging alert: {alert_type} - {alert_id}")
-        
+
         # In a real application, you would update a flag in the database
         # For now, we'll just return success
         return {"Status": True, "Message": "Alert acknowledged successfully"}
-        
+
     except Exception as e:
         logger.error(f"Error acknowledging alert: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail={"Status": False, "Error": str(e), "Message": "Failed to acknowledge alert"}
+            detail={"Status": False, "Error": str(
+                e), "Message": "Failed to acknowledge alert"}
         )
 
 # Add test endpoint for alerts
+
+
 @alerts_router.get("/test")
 async def test_alerts_connection():
     """Simple test endpoint for checking Alerts API connection"""
@@ -147,5 +157,6 @@ async def test_alerts_connection():
         logger.error(f"Error in test_alerts_connection: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail={"Status": False, "Error": str(e), "Message": "Test connection failed"}
-        ) 
+            detail={"Status": False, "Error": str(
+                e), "Message": "Test connection failed"}
+        )
