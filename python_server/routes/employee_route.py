@@ -262,6 +262,7 @@ async def add_employee(employee: EmployeeCreate,
             SELECT COUNT(*) AS count 
             FROM [HUMAN].[dbo].[Employees] 
             WHERE EmployeeID = @EmployeeID
+
         """
 
         result = await execute_sqlserver_query(
@@ -280,16 +281,21 @@ async def add_employee(employee: EmployeeCreate,
 
         # Insert new employee
         insert_query = """
+            SET IDENTITY_INSERT [HUMAN].[dbo].[Employees] ON
             INSERT INTO [HUMAN].[dbo].[Employees] 
             (EmployeeID, DepartmentID, PositionID, FullName, Email, 
              PhoneNumber, Gender, DateOfBirth, HireDate, Salary, Status)
             VALUES 
             (@EmployeeID, @DepartmentID, @PositionID, @FullName, @Email,
              @PhoneNumber, @Gender, @DateOfBirth, @HireDate, @Salary, @Status)
+            SET IDENTITY_INSERT [HUMAN].[dbo].[Employees] OFF
         """
 
         # Convert employee model to dict and prepare parameters
-        employee_dict = employee.dict()
+        employee_dict = {key: employee.dict()[key] for key in [
+            "EmployeeID", "DepartmentID", "PositionID", "FullName", "Email", 
+            "PhoneNumber", "Gender", "DateOfBirth", "HireDate", "Salary", "Status"
+        ]}
 
         await execute_sqlserver_query(insert_query, employee_dict)
 

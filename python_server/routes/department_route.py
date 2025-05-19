@@ -47,7 +47,7 @@ async def get_departments(request: Request):
                 e.FullName as ManagerName,
                 COUNT(emp.EmployeeID) as TotalEmployees
             FROM [HUMAN].[dbo].[Departments] d
-            LEFT JOIN [HUMAN].[dbo].[Employees] e ON CAST(d.ManagerID AS NVARCHAR(10)) = e.EmployeeID
+            LEFT JOIN [HUMAN].[dbo].[Employees] e ON d.ManagerID = e.EmployeeID
             LEFT JOIN [HUMAN].[dbo].[Employees] emp ON emp.DepartmentID = d.DepartmentID
             GROUP BY d.DepartmentID, d.DepartmentName, d.Description, d.ManagerID, e.FullName
             ORDER BY d.DepartmentName

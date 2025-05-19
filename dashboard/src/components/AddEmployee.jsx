@@ -6,6 +6,9 @@ import { getAuthConfig } from "../config/api.config";
 const AddEmployee = () => {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState({
+    DateOfBirth: "",
+    PositionID: "",
+    FullName: "",
     EmployeeID: "",
     ApplicantID: "",
     DepartmentID: "",
@@ -60,6 +63,9 @@ const AddEmployee = () => {
       const response = await axios.post(
         "http://localhost:9000/employees/add",
         {
+          DateOfBirth: employee.DateOfBirth,
+          FullName: employee.FullName,
+          PositionID: employee.PositionID,
           EmployeeID: employee.EmployeeID,
           ApplicantID: employee.ApplicantID,
           DepartmentID: parseInt(employee.DepartmentID),
@@ -119,6 +125,53 @@ const AddEmployee = () => {
               placeholder="Enter employee ID"
               onChange={(e) =>
                 setEmployee({ ...employee, EmployeeID: e.target.value })
+              }
+              required
+              disabled={loading}
+            />
+          </div><div className="col-6">
+            <label htmlFor="FullName" className="form-label">
+              FullName
+            </label>
+            <input
+              type="text"
+              className="form-control rounded-0"
+              id="FullName"
+              placeholder="Enter FullName"
+              onChange={(e) =>
+                setEmployee({ ...employee, FullName: e.target.value })
+              }
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="col-6">
+            <label htmlFor="PositionID" className="form-label">
+              PositionID
+            </label>
+            <input
+              type="text"
+              className="form-control rounded-0"
+              id="PositionID"
+              placeholder="Enter PositionID"
+              onChange={(e) =>
+                setEmployee({ ...employee, PositionID: e.target.value })
+              }
+              required
+              disabled={loading}
+            />
+          </div>
+           <div className="col-6">
+            <label htmlFor="DateOfBirthID" className="form-label">
+              DateOfBirth
+            </label>
+            <input
+              type="date"
+              className="form-control rounded-0"
+              id="DateOfBirth"
+              placeholder="Enter DateOfBirth"
+              onChange={(e) =>
+                setEmployee({ ...employee, DateOfBirth: e.target.value })
               }
               required
               disabled={loading}
