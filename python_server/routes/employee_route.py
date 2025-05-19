@@ -121,13 +121,14 @@ async def get_employees_mysql(request: Request):
 
             query = """
                 SELECT 
-                    e.EmployeeID,  
-                    e.FullName, 
+                    e.EmployeeID, 
+                    e.FirstName, 
+                    e.LastName, 
                     e.Gender, 
                     e.DateOfBirth, 
                     e.Email, 
-                    e.PhoneNumber, 
-                    e.HireDate, 
+                    e.Phone as PhoneNumber, 
+                    e.JoinDate as HireDate, 
                     e.Status,
                     e.Salary, 
                     d.DepartmentName, 
@@ -143,13 +144,14 @@ async def get_employees_mysql(request: Request):
             # Regular query for admins, HR managers, and payroll managers
             query = """
                 SELECT 
-                    e.EmployeeID, 
-                    e.FullName, 
+                    e.EmployeeID,
+                    e.FirstName, 
+                    e.LastName, 
                     e.Gender, 
                     e.DateOfBirth, 
                     e.Email, 
-                    e.PhoneNumber, 
-                    e.HireDate, 
+                    e.Phone as PhoneNumber, 
+                    e.JoinDate as HireDate, 
                     e.Status,
                     e.Salary, 
                     d.DepartmentName, 

@@ -8,7 +8,7 @@ import {
   Route,
   Navigate,
   useLocation,
-} from "react-router";
+} from "react-router-dom";
 import Dashboard from "./components/Dashboard";
 import Home from "./components/Home";
 import Employees from "./components/Employees";
