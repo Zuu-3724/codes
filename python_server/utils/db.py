@@ -3,13 +3,13 @@ from mysql.connector import Error as MySQLError, pooling
 import pyodbc
 import logging
 from typing import Dict, Any
-# from dotenv import load_dotenv # Comment out this line
+from dotenv import load_dotenv
 from fastapi import HTTPException
 import time
 from functools import wraps
 
 # Load environment variables
-# load_dotenv() # Comment out this line
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -23,8 +23,8 @@ logger = logging.getLogger("database")
 MYSQL_CONFIG = {
     'host': os.getenv('MYSQL_HOST', 'localhost'),
     'user': os.getenv('MYSQL_USER', 'root'),
-    'password': os.getenv('MYSQL_PASSWORD', 'Nhat@2004'),
-    'database': os.getenv('MYSQL_DATABASE', 'payroll'),
+    'password': os.getenv('MYSQL_PASSWORD'),
+    'database': os.getenv('MYSQL_DATABASE'),
     'pool_name': 'mypool',
     'pool_size': 10
 }
@@ -49,10 +49,10 @@ except Exception as e:
 SQL_SERVER_CONFIG = {
     # Using the available driver on this system
     'driver': '{ODBC Driver 18 for SQL Server}',
-    'server': 'HONG-NHAT\MSSQLSERVER01',
-    'database': 'sqlserver',
-    'uid': 'Zuu',
-    'pwd': 'Nhat@2004',
+    'server': os.getenv('SQLSERVER_HOST'),
+    'database':  os.getenv('SQLSERVER_DATABASE'),
+    'uid':  os.getenv('SQLSERVER_USER'),
+    'pwd':  os.getenv('SQLSERVER_PASSWORD'),
 }
 
 # Initialize SQL Server connection pool
@@ -226,9 +226,9 @@ def check_sqlserver_health():
 # SQL Server Connection settings
 sql_server_config = {
     'server': os.getenv('SQLSERVER_HOST', '.'),
-    'database': os.getenv('SQLSERVER_DATABASE', 'HUMAN'),
-    'username': os.getenv('SQLSERVER_USER', 'sa'),
-    'password': os.getenv('SQLSERVER_PASSWORD', 'trunghieu013'),
+    'database': os.getenv('SQLSERVER_DATABASE'),
+    'username': os.getenv('SQLSERVER_USER'),
+    'password': os.getenv('SQLSERVER_PASSWORD'),
     'pool_size': int(os.getenv('SQLSERVER_POOL_SIZE', '10')),
     'connection_timeout': int(os.getenv('SQLSERVER_TIMEOUT', '30')),
     'max_retries': int(os.getenv('SQLSERVER_MAX_RETRIES', '3')),

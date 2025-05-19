@@ -39,7 +39,7 @@ const DashboardCard = ({
 
   return (
     <div
-      className={`card border-0 shadow-sm mb-3 bg-gradient h-100 ${
+      className={`card border-0 shadow-sm mb-3  h-100 ${
         onClick ? "cursor-pointer" : ""
       }`}
       style={{ background }}

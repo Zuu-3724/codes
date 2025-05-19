@@ -364,7 +364,7 @@ const Departments = () => {
       <div className="row mb-4">
         <div className="col-xl-3 col-md-6">
           <div
-            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            className="card border-0 shadow-sm mb-3  h-100"
             style={{
               background: "linear-gradient(to right, #4facfe, #00f2fe)",
             }}
@@ -388,7 +388,7 @@ const Departments = () => {
         </div>
         <div className="col-xl-3 col-md-6">
           <div
-            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            className="card border-0 shadow-sm mb-3  h-100"
             style={{
               background: "linear-gradient(to right, #43e97b, #38f9d7)",
             }}
@@ -412,7 +412,7 @@ const Departments = () => {
         </div>
         <div className="col-xl-3 col-md-6">
           <div
-            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            className="card border-0 shadow-sm mb-3  h-100"
             style={{
               background: "linear-gradient(to right, #fa709a, #fee140)",
             }}
@@ -436,7 +436,7 @@ const Departments = () => {
         </div>
         <div className="col-xl-3 col-md-6">
           <div
-            className="card border-0 shadow-sm mb-3 bg-gradient h-100"
+            className="card border-0 shadow-sm mb-3  h-100"
             style={{
               background: "linear-gradient(to right, #6a11cb, #2575fc)",
             }}
